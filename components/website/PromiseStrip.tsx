@@ -7,8 +7,8 @@ interface PromiseItem {
 }
 
 const promises: PromiseItem[] = [
-  { icon: Truck, title: "Free Shipping", sub: "On orders above ₹2,999" },
-  { icon: RotateCcw, title: "Easy Returns", sub: "30-day hassle-free returns" },
+  { icon: Truck, title: "Free Shipping", sub: "On orders above ₹1,499" },
+  { icon: RotateCcw, title: "Easy Returns", sub: "07-days hassle-free returns" },
   { icon: Leaf, title: "Sustainably Made", sub: "Responsible sourcing always" },
   { icon: ShieldCheck, title: "Secure Checkout", sub: "256-bit SSL encryption" },
 ];

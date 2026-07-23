@@ -331,9 +331,9 @@ export default function Header() {
                 <a
                   href="#"
                   onClick={(e) => {
-                    e.preventDefault();
-                    window.showSignInPopup?.();
-                  }}
+                  e.preventDefault();
+                  (window as any).showSignInPopup?.();
+                  }}         
                   className="hidden sm:flex flex-col items-center text-[10px] sm:text-xs hover:text-gray-600"
                 >
                   <User size={20} className="sm:w-[22px] sm:h-[22px]" />

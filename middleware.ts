@@ -22,6 +22,7 @@ const ROUTE_ACCESS = {
     "/gifts",
     "/holidays",
     "/contact",
+    "/business-to-business", // 👉 Yeh line add kar di hai taaki page public ho jaye
     "/category",
     "/product",
     "/products",
@@ -36,8 +37,7 @@ const ROUTE_ACCESS = {
     "/auth",
     "/api",
     "/purchase-policy",
-     "/wishlist",
-
+    "/wishlist",
   ],
 
   // Protected routes - require authentication

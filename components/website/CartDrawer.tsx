@@ -7,9 +7,11 @@ import { useEffect, useState, useCallback } from "react";
 import type { RootState } from "@/store/store";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation"; // 👉 Yeh router import kiya hai
 
 export default function CartDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const dispatch = useDispatch();
+  const router = useRouter(); // 👉 Router hook initialize kiya hai
   const [isLoading, setIsLoading] = useState(false);
   const items: CartItem[] = useSelector((state: RootState) => state.cart.items);
   const auth = useSelector((state: RootState) => state.authStore?.auth);
@@ -219,13 +221,23 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
               <span className="text-base font-semibold text-[#1A1A1A]">{formatPrice(subtotal)}</span>
             </div>
             <p className="text-[10px] text-[#8B6F52] text-center">Shipping & taxes calculated at checkout</p>
-            <Link
-              href="/checkout"
-              onClick={onClose}
-              className="block w-full bg-[#1A1A1A] text-white text-xs tracking-widest uppercase text-center py-3.5 hover:bg-[#C17A56] transition-colors"
+            
+            {/* 👉 Checkout Button with SignInPopup trigger */}
+            <button
+              onClick={() => {
+                if (!auth) {
+                  onClose();
+                  (window as any).showSignInPopup?.();
+                } else {
+                  onClose();
+                  router.push("/checkout");
+                }
+              }}
+              className="block w-full bg-[#1A1A1A] text-white text-xs tracking-widest uppercase text-center py-3.5 hover:bg-[#C17A56] transition-colors cursor-pointer"
             >
               Checkout
-            </Link>
+            </button>
+
             <button
               onClick={handleClearCart}
               className="block w-full text-center text-xs tracking-widest uppercase text-[#8B6F52] hover:text-[#1A1A1A] transition-colors"

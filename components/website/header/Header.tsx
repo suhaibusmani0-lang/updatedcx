@@ -691,7 +691,7 @@ export default function Header() {
               onClick={(e) => {
                 e.preventDefault();
                 setMobileMenu(false);
-                window.showSignInPopup?.();
+                (window as any).showSignInPopup?.();
               }}
               className="flex items-center gap-2"
             >

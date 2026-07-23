@@ -16,7 +16,8 @@ import { usePathname, useSearchParams } from "next/navigation";
  * script is skipped (safe no-op).
  */
 
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
+// 👇 Yahan aapki ID add kar di hai as a direct string fallback
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-VPY34LER6S";
 const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
 // Placeholders to skip (so builds don't emit real events with dummy IDs)
@@ -33,7 +34,6 @@ declare global {
     fbq?: (...args: any[]) => void;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dataLayer?: any[];
-    showSignInPopup?: () => void;
   }
 }
 

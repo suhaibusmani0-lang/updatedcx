@@ -113,8 +113,9 @@ export default function SearchBar() {
           onSubmit={handleSubmit}
           className="sticky top-0 z-30 flex items-center border-b border-gray-400 bg-white w-full"
         >
+          {/* Yahan par value={search || ""} lagaya hai error fix karne ke liye 👇 */}
           <input
-            value={search}
+            value={search || ""}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
             className="flex-1 py-2 outline-none bg-transparent text-sm px-1 text-gray-800"

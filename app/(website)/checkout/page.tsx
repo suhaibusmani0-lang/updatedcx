@@ -74,7 +74,10 @@ export default function CheckoutPage() {
   const paymentMethod = form.watch("paymentMethod");
   const useSameBillingAddress = form.watch("useSameBillingAddress");
   const paymentDiscount = paymentMethod === "Razorpay" ? Math.round(subtotal * 0.1) : 0;
-  const total = subtotal + shipping - discount - paymentDiscount;
+  
+  // COD charge integration
+  const codCharge = paymentMethod === "COD" ? 69 : 0;
+  const total = subtotal + shipping + codCharge - discount - paymentDiscount;
 
   useEffect(() => {
     if (useSameBillingAddress) {
@@ -88,14 +91,14 @@ export default function CheckoutPage() {
   }, [useSameBillingAddress, form.watch("name"), form.watch("phone"), form.watch("address"), form.watch("city"), form.watch("state"), form.watch("pincode")]);
 
   useEffect(() => {
-    const fallbackShipping = subtotal >= 2999 ? 0 : 99;
+    const fallbackShipping = subtotal >= 1499 ? 0 : 99;
     setShipping(fallbackShipping);
     setShippingMeta(null);
   }, [subtotal]);
 
   useEffect(() => {
     if (!pincode || pincode.length !== 6 || !items.length) {
-      setShipping(subtotal >= 2999 ? 0 : 99);
+      setShipping(subtotal >= 1499 ? 0 : 99);
       setShippingMeta(null);
       return;
     }
@@ -114,11 +117,11 @@ export default function CheckoutPage() {
           setShipping(data.data.shippingCharge);
           setShippingMeta({ courierName: data.data.courierName, shippingMethod: data.data.shippingMethod });
         } else {
-          setShipping(subtotal >= 2999 ? 0 : 99);
+          setShipping(subtotal >= 1499 ? 0 : 99);
           setShippingMeta(null);
         }
       } catch {
-        setShipping(subtotal >= 2999 ? 0 : 99);
+        setShipping(subtotal >= 1499 ? 0 : 99);
         setShippingMeta(null);
       }
     }, 400);
@@ -468,12 +471,12 @@ export default function CheckoutPage() {
                 Order Summary ({items.reduce((s, i) => s + i.qty, 0)} items)
               </h2>
 
-              {/* Items */}
+              {/* Items Info message */}
               <div className="space-y-3 mb-4 rounded-xl border border-[#E3D9C9] bg-[#F8F3EA] p-3 text-sm text-[#8B6F52]">
                 {paymentMethod === "Razorpay" ? (
                   <p>Razorpay checkout gets a 10% discount on the cart subtotal.</p>
                 ) : (
-                  <p>Cash on delivery keeps the original price with no discount.</p>
+                  <p>Cash on delivery includes an additional ₹69 handling fee.</p>
                 )}
               </div>
               <div className="space-y-4 max-h-64 overflow-y-auto pr-1">
@@ -521,15 +524,37 @@ export default function CheckoutPage() {
                 <div className="flex justify-between text-sm text-[#8B6F52]">
                   <span>Subtotal</span><span>{formatPrice(subtotal)}</span>
                 </div>
+                
+                {/* Shipping Display Logic */}
                 <div className="flex justify-between text-sm text-[#8B6F52]">
                   <span>Shipping</span>
                   <div className="text-right">
-                    <div className={shipping === 0 ? "text-green-600 font-medium" : ""}>{shipping === 0 ? "FREE" : formatPrice(shipping)}</div>
+                    {shipping === 0 ? (
+                      <div className="text-green-600 font-medium">
+                        {subtotal >= 1499 && (
+                          <del className="text-[#8B6F52] opacity-70 font-normal mr-2">
+                            {formatPrice(99)}
+                          </del>
+                        )}
+                        FREE
+                      </div>
+                    ) : (
+                      <div>{formatPrice(shipping)}</div>
+                    )}
                     {shippingMeta?.courierName && (
                       <div className="text-[11px] text-[#8B6F52]">via {shippingMeta.courierName}</div>
                     )}
                   </div>
                 </div>
+
+                {/* COD Fee Display Logic */}
+                {paymentMethod === "COD" && (
+                  <div className="flex justify-between text-sm text-[#8B6F52]">
+                    <span>COD Fee</span>
+                    <span>{formatPrice(69)}</span>
+                  </div>
+                )}
+
                 {discount > 0 && (
                   <div className="flex justify-between text-sm text-green-600 font-medium">
                     <span>Discount</span><span>−{formatPrice(discount)}</span>
@@ -569,7 +594,7 @@ export default function CheckoutPage() {
             {/* Trust badges */}
             <div className="bg-[#F1EBE1] rounded-2xl border border-[#E3D9C9] p-4 space-y-3">
               {[
-                { icon: Truck, text: "Free shipping on orders above ₹2,999" },
+                { icon: Truck, text: "Free shipping on orders above ₹1,499" },
                 { icon: Shield, text: "Secure checkout with SSL encryption" },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-2.5 text-xs text-[#8B6F52]">

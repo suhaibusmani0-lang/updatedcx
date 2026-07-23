@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { login } from '@/store/reducer/authReducer';
 import { showToast } from '@/lib/showToast';
+import { GoogleAuthProvider, signInWithPopup, signInWithPhoneNumber } from 'firebase/auth';
+import { auth, isFirebaseConfigured, createFirebaseRecaptchaVerifier } from '@/lib/firebase';
 
 export default function SignInPopup() {
   const [open, setOpen] = useState(false);
@@ -24,7 +26,15 @@ export default function SignInPopup() {
 
   const [step, setStep] = useState('credentials'); // 'credentials' | 'otp'
   const [emailForOtp, setEmailForOtp] = useState('');
+  const [loginMethod, setLoginMethod] = useState('email');
+  const [mobilePhone, setMobilePhone] = useState('');
+  const [mobileOtp, setMobileOtp] = useState('');
+  const [mobileStep, setMobileStep] = useState('phone');
+  const [mobileLoading, setMobileLoading] = useState(false);
+  const [mobileError, setMobileError] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
   const headerText = (() => {
@@ -223,6 +233,135 @@ export default function SignInPopup() {
     }
   };
 
+  const handleSendMobileOtp = async (e) => {
+    e.preventDefault();
+    setMobileError('');
+    setMobileLoading(true);
+
+    try {
+      if (!isFirebaseConfigured) {
+        throw new Error('Firebase is not configured. Please set up NEXT_PUBLIC_FIREBASE_* values.');
+      }
+      if (!auth) {
+        throw new Error('Firebase auth is unavailable');
+      }
+      const normalizedPhone = (mobilePhone || '').trim();
+      if (!normalizedPhone) {
+        throw new Error('Phone number is required');
+      }
+
+      const verifier = window.recaptchaVerifier || await createFirebaseRecaptchaVerifier('firebase-recaptcha-container');
+      const confirmation = await signInWithPhoneNumber(auth, normalizedPhone, verifier);
+      setConfirmationResult(confirmation);
+      setMobileStep('otp');
+      showToast('success', 'OTP sent to your phone number');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to send OTP';
+      setMobileError(message);
+      showToast('error', message);
+    } finally {
+      setMobileLoading(false);
+    }
+  };
+
+  const handleVerifyMobileOtp = async (e) => {
+    e.preventDefault();
+    setMobileError('');
+    setMobileLoading(true);
+
+    try {
+      if (!confirmationResult) {
+        throw new Error('Please request a code first');
+      }
+      const otp = (mobileOtp || '').trim();
+      if (!otp) {
+        throw new Error('OTP is required');
+      }
+
+      const userCredential = await confirmationResult.confirm(otp);
+      const firebaseUser = userCredential.user;
+
+      const response = await fetch('/api/auth/firebase-phone-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: firebaseUser.phoneNumber || mobilePhone,
+          name: firebaseUser.displayName || mobilePhone,
+          uid: firebaseUser.uid,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || 'Unable to complete login');
+      }
+
+      const user = data?.data?.user;
+      if (user) {
+        dispatch(login(user));
+      }
+      showToast('success', data?.message || 'Logged in successfully');
+      setOpen(false);
+      try { window.location.reload(); } catch (e) {}
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'OTP verification failed';
+      setMobileError(message);
+      showToast('error', message);
+    } finally {
+      setMobileLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setGoogleLoading(true);
+
+    try {
+      if (!isFirebaseConfigured || !auth) {
+        throw new Error('Firebase is not configured. Please set the NEXT_PUBLIC_FIREBASE_* values in your environment.');
+      }
+
+      const provider = new GoogleAuthProvider();
+      provider.addScope('profile');
+      provider.addScope('email');
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
+
+      const response = await fetch('/api/auth/google-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || 'Customer',
+          email: firebaseUser.email,
+          avatar: firebaseUser.photoURL,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.message || 'Google login failed');
+      }
+
+      const user = data?.data?.user;
+      if (user) {
+        dispatch(login(user));
+      }
+      showToast('success', data?.message || 'Logged in successfully');
+      setOpen(false);
+      try { window.location.reload(); } catch (e) {}
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Google login failed';
+      const friendlyMessage = message.includes('operation-not-allowed')
+        ? 'Google sign-in is not enabled in your Firebase project. Please enable Google in Firebase Authentication > Sign-in method.'
+        : message;
+      setError(friendlyMessage);
+      showToast('error', friendlyMessage);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   if (!open) return null;
 
   return (
@@ -242,34 +381,152 @@ export default function SignInPopup() {
         <p className='text-center' style={{color:'#555', marginBottom:16}}>{headerText}</p>
 
         {step === 'credentials' && (
-          <form onSubmit={handleCredentialsSubmit}>
-            <input 
-              name="email" 
-              type="email" 
-              placeholder="Email" 
-              required 
-              style={inputStyle} 
-            />
-            <input 
-              name="password" 
-              type="password" 
-              placeholder="Password" 
-              required 
-              style={inputStyle} 
-            />
-            <button 
-              type="submit" 
-              style={primaryBtnStyle} 
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-            {error && <div style={{color:'red', marginTop:8}}>{error}</div>}
-          </form>
+          <div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMethod('email');
+                  setMobileError('');
+                  setError('');
+                  setMobileStep('phone');
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  borderRadius: 6,
+                  border: loginMethod === 'email' ? '1px solid #111827' : '1px solid #d1d5db',
+                  background: loginMethod === 'email' ? '#111827' : '#fff',
+                  color: loginMethod === 'email' ? '#fff' : '#111827',
+                  cursor: 'pointer',
+                }}
+              >
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMethod('mobile');
+                  setMobileError('');
+                  setError('');
+                  setMobileStep('phone');
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  borderRadius: 6,
+                  border: loginMethod === 'mobile' ? '1px solid #111827' : '1px solid #d1d5db',
+                  background: loginMethod === 'mobile' ? '#111827' : '#fff',
+                  color: loginMethod === 'mobile' ? '#fff' : '#111827',
+                  cursor: 'pointer',
+                }}
+              >
+                Mobile
+              </button>
+            </div>
+            {loginMethod === 'email' ? (
+              <form key="email-login-form" onSubmit={handleCredentialsSubmit}>
+                <input 
+                  name="email" 
+                  type="email" 
+                  placeholder="Email" 
+                  required 
+                  style={inputStyle} 
+                />
+                <input 
+                  name="password" 
+                  type="password" 
+                  placeholder="Password" 
+                  required 
+                  style={inputStyle} 
+                />
+                <button 
+                  type="submit" 
+                  style={primaryBtnStyle} 
+                  disabled={loading}
+                >
+                  {loading ? 'Signing in...' : 'Sign In'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={googleLoading || loading}
+                  style={{
+                    ...primaryBtnStyle,
+                    marginTop: 10,
+                    background: '#fff',
+                    color: '#111827',
+                    border: '1px solid #d1d5db',
+                  }}
+                >
+                  {googleLoading ? 'Connecting...' : 'Continue with Google'}
+                </button>
+                {error && <div style={{color:'red', marginTop:8}}>{error}</div>}
+              </form>
+            ) : (
+              <form key="mobile-login-form" onSubmit={mobileStep === 'phone' ? handleSendMobileOtp : handleVerifyMobileOtp}>
+                {mobileStep === 'phone' ? (
+                  <>
+                    <input
+                      value={mobilePhone}
+                      onChange={(e) => setMobilePhone(e.target.value)}
+                      type="tel"
+                      placeholder="Mobile number"
+                      required
+                      style={inputStyle}
+                    />
+                    <div id="firebase-recaptcha-container" />
+                    <button
+                      type="submit"
+                      style={primaryBtnStyle}
+                      disabled={mobileLoading}
+                    >
+                      {mobileLoading ? 'Sending OTP...' : 'Send OTP'}
+                    </button>
+                    {mobileError && <div style={{color:'red', marginTop:8}}>{mobileError}</div>}
+                  </>
+                ) : (
+                  <>
+                    <input
+                      value={mobileOtp}
+                      onChange={(e) => setMobileOtp(e.target.value)}
+                      type="text"
+                      placeholder="Enter OTP"
+                      required
+                      style={inputStyle}
+                    />
+                    <button
+                      type="submit"
+                      style={primaryBtnStyle}
+                      disabled={mobileLoading}
+                    >
+                      {mobileLoading ? 'Verifying...' : 'Verify OTP'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileStep('phone');
+                        setMobileOtp('');
+                        setMobileError('');
+                      }}
+                      style={{
+                        ...linkBtnStyle,
+                        display: 'block',
+                        marginTop: 12,
+                      }}
+                    >
+                      Back to phone entry
+                    </button>
+                    {mobileError && <div style={{color:'red', marginTop:8}}>{mobileError}</div>}
+                  </>
+                )}
+              </form>
+            )}
+          </div>
         )}
 
         {step === 'otp' && (
-          <form onSubmit={handleOtpSubmit}>
+          <form key="otp-form" onSubmit={handleOtpSubmit}>
             <p style={{marginBottom:8}}>
               Enter the OTP sent to <strong>{emailForOtp}</strong>
             </p>
@@ -301,7 +558,7 @@ export default function SignInPopup() {
         )}
 
         {step === 'forgot-email' && (
-          <form onSubmit={handleForgotSendOtp}>
+          <form key="forgot-email-form" onSubmit={handleForgotSendOtp}>
             <input 
               name="email" 
               type="email" 
@@ -321,7 +578,7 @@ export default function SignInPopup() {
         )}
 
         {step === 'forgot-otp' && (
-          <form onSubmit={handleForgotVerifyOtp}>
+          <form key="forgot-otp-form" onSubmit={handleForgotVerifyOtp}>
             <p style={{marginBottom:8}}>
               Enter the OTP sent to <strong>{emailForOtp}</strong>
             </p>
@@ -353,7 +610,7 @@ export default function SignInPopup() {
         )}
 
         {step === 'forgot-reset' && (
-          <form onSubmit={handleForgotUpdatePassword}>
+          <form key="forgot-reset-form" onSubmit={handleForgotUpdatePassword}>
             <input 
               name="password" 
               type="password" 
@@ -407,7 +664,7 @@ export default function SignInPopup() {
 
         {step === 'register' && (
           <div style={{marginTop:16}}>
-            <form onSubmit={handleRegisterSubmit}>
+            <form key="register-form" onSubmit={handleRegisterSubmit}>
               <input 
                 name="name" 
                 type="text" 

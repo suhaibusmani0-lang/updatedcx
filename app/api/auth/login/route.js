@@ -1,7 +1,7 @@
 import { connectDB } from "@/lib/databaseConnection";
 import UserModel from "@/models/User.model";
 import OtpModel from "@/models/Otp.model";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import z from "zod";
 import crypto from "crypto";
 import { otpEmail } from "@/email/otpEmail";

@@ -9,7 +9,7 @@ import AutoTitle from "@/components/AutoTitle";
 import Analytics from "@/components/Analytics";
 import Providers from "@/components/providers/ThemeProvider";
 import GlobalProvider from "@/components/application/GlobalProvider";
-
+import WhatsAppButton from "@/components/website/WhatsAppButton" 
 import { ToastContainer } from "react-toastify";
 
 export const metadata: Metadata = {
@@ -66,6 +66,7 @@ export default function RootLayout({
             {children}
             <ToastContainer position="top-right" autoClose={3000} />
           </Providers>
+          <WhatsAppButton />
         </GlobalProvider>
       </body>
     </html>

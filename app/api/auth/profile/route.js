@@ -1,7 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/databaseConnection";
 import UserModel from "@/models/User.model";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 
 function jsonResponse(status, message, data = null) {
   return Response.json({ ok: status < 400, message, data }, { status });

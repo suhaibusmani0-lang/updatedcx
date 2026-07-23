@@ -2,7 +2,7 @@ import { connectDB } from "@/lib/databaseConnection";
 import { sendEmail } from "@/lib/sentMail";
 import { emailVerificationLink } from "@/email/emailVerificationLink";
 import { z } from "zod";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import crypto from "node:crypto";
 
 const validatedSchema = z.object({

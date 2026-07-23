@@ -6,8 +6,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 // Slide data – add optional `video` field
 const slides = [
   {
-    mode: "CX",
-    eyebrow: "Cosmopolitan Xccessories",
+    // mode: "CX",
+    // eyebrow: "Cosmopolitan Xccessories",
     headline: "The Art of Burning Bakhoor",
     sub: "The art of burning bakhoor encompasses much more than the simple act of lighting incense.",
     cta: "Buy Now",
@@ -17,8 +17,8 @@ const slides = [
     overlay: "bg-gradient-to-t from-[#1A1A1A]/70 via-[#1A1A1A]/20 to-transparent",
   },
   {
-    mode: "CX",
-    eyebrow: "Cosmopolitan Xccessories",
+    // mode: "CX",
+    // eyebrow: "Cosmopolitan Xccessories",
     headline: "Oud Essential Oil Diffuser Gift Set",
     sub: "Experience luxury aromatherapy with our pure Oud Diffuser Oils. This carefully curated set features a wide assortment of floral.",
     cta: "BuyNow",

@@ -401,11 +401,12 @@ export default function Header() {
           >
             <form onSubmit={handleMobileSearch} className="w-full relative">
               <div className="flex items-center border-2 border-gray-300 rounded-lg bg-white px-3 focus-within:border-[#C17A56] transition-colors">
+                {/* Error fix: mobileSearchQuery || "" */}
                 <input
                   ref={searchInputRef}
                   type="text"
                   placeholder="Search products..."
-                  value={mobileSearchQuery}
+                  value={mobileSearchQuery || ""}
                   onChange={(e) => setMobileSearchQuery(e.target.value)}
                   className="flex-1 py-3 outline-none text-sm bg-transparent"
                   aria-label="Mobile search"

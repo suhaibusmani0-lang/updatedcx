@@ -35,6 +35,11 @@ const categorySchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    sortOrder: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
   },
   {
     timestamps: true,

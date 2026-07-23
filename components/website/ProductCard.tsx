@@ -220,7 +220,8 @@ export default function ProductCard({ product }: { product: Product }) {
         <button
           onClick={handleAddToCart}
           disabled={isOutOfStock || isAddingToCart}
-          className={`absolute bottom-0 left-0 right-0 text-[10px] sm:text-xs tracking-widest uppercase text-center py-2.5 sm:py-3 translate-y-full group-hover:translate-y-0 transition-all duration-300 font-semibold z-10
+          data-testid="product-card-add-to-cart"
+          className={`absolute bottom-0 left-0 right-0 text-[10px] sm:text-xs tracking-widest uppercase text-center py-2.5 sm:py-3 transition-all duration-300 font-semibold z-10 translate-y-0 md:translate-y-full md:group-hover:translate-y-0
             ${added ? "bg-[#e2e2e2] text-white" : 
               isOutOfStock ? "bg-gray-400 text-white cursor-not-allowed" : 
               "bg-[#1A1A1A] text-white hover:bg-[#e2e2e2]"}`}
@@ -237,7 +238,7 @@ export default function ProductCard({ product }: { product: Product }) {
           ) : isOutOfStock ? (
             "Out of Stock"
           ) : (
-            "Quick Add"
+            "Add to Cart"
           )}
         </button>
       </div>

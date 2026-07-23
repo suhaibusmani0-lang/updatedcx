@@ -12,7 +12,7 @@ cloudinary.config({
 export async function GET() {
   try {
     await connectDB();
-    const categories = await CategoryModel.find({ isDeleted: false }).sort({ createdAt: -1 });
+    const categories = await CategoryModel.find({ isDeleted: false }).sort({ sortOrder: 1, createdAt: 1 });
     return jsonRes(200, "Categories fetched", categories);
   } catch (e) {
     return jsonRes(500, e.message);

@@ -104,10 +104,17 @@ export async function POST(request) {
       return jsonResponse(500, "Failed to generate OTP. Please try again.");
     }
 
-    // Fire-and-forget: send OTP email without blocking the response
-    sendEmail(user.email, "Your Login OTP", otpEmail(otp)).catch((err) =>
-      console.error("Failed to send OTP email:", err)
-    );
+    // Send OTP email (await so we surface real send errors instead of silently
+    // dropping them in dev/edge runtimes).
+    try {
+      await sendEmail(user.email, "Your Login OTP", otpEmail(otp));
+    } catch (err) {
+      console.error("Failed to send OTP email:", err);
+      return jsonResponse(
+        500,
+        "Unable to send OTP email right now. Please try again or use resend."
+      );
+    }
 
     // Success Response
     return jsonResponse(200, "OTP sent successfully", {

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ADMIN_ADD_CATEGORY, ADMIN_EDIT_CATEGORY } from "@/routes/adminPanelRoutes";
-import { Loader2, Search, X, AlertCircle, CheckCircle, Trash2, Edit, Plus } from "lucide-react";
+import { Loader2, Search, X, AlertCircle, CheckCircle, Trash2, Edit, Plus, ArrowUp, ArrowDown } from "lucide-react";
 import { showToast } from "@/lib/showToast";
 
 interface Category {
@@ -15,6 +15,7 @@ interface Category {
   createdAt?: string;
   updatedAt?: string;
   depth?: number;
+  sortOrder?: number;
 }
 
 interface DeleteModalProps {
@@ -108,9 +109,13 @@ export default function CategoriesPage() {
         const ordered: any[] = [];
         const dfs = (node: any, depth = 0) => {
           ordered.push({ ...node, depth });
-          node.children.sort((a: any, b: any) => a.name.localeCompare(b.name)).forEach((ch: any) => dfs(ch, depth + 1));
+          node.children
+            .sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name))
+            .forEach((ch: any) => dfs(ch, depth + 1));
         };
-        roots.sort((a, b) => a.name.localeCompare(b.name)).forEach((r) => dfs(r, 0));
+        roots
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name))
+          .forEach((r) => dfs(r, 0));
 
         setCategories(ordered);
         setFilteredCategories(ordered);
@@ -184,7 +189,10 @@ export default function CategoriesPage() {
     });
     // sort children
     const sortRec = (nodes: any[]) => {
-      nodes.sort((a: any, b: any) => a.name.localeCompare(b.name));
+      nodes.sort(
+        (a: any, b: any) =>
+          (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name)
+      );
       nodes.forEach((n) => n.children && sortRec(n.children));
     };
     sortRec(roots);
@@ -193,6 +201,71 @@ export default function CategoriesPage() {
 
   const toggleOpen = (id: string) => {
     setOpenIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Persist the new sortOrder of a set of sibling categories to the backend
+  const persistOrder = async (siblingIds: string[]) => {
+    try {
+      const res = await fetch("/api/admin/categories/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: siblingIds }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showToast("error", data.message || "Failed to save order");
+        await fetchCategories();
+        return;
+      }
+      showToast("success", "Order updated");
+    } catch (err) {
+      showToast("error", err instanceof Error ? err.message : "Failed to save order");
+      await fetchCategories();
+    }
+  };
+
+  // Move a category up or down among its siblings (same parent)
+  const moveCategory = async (categoryId: string, direction: "up" | "down") => {
+    const cat = categories.find((c) => c._id === categoryId);
+    if (!cat) return;
+    const parentId =
+      cat.parent && typeof cat.parent === "object"
+        ? (cat.parent as any)._id
+        : (cat.parent as string) || null;
+
+    // Get all siblings sharing this parent, ordered by current sortOrder+name
+    const siblings = categories
+      .filter((c) => {
+        const pid =
+          c.parent && typeof c.parent === "object" ? (c.parent as any)._id : (c.parent as string) || null;
+        return pid === parentId;
+      })
+      .sort(
+        (a, b) =>
+          (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name)
+      );
+
+    const idx = siblings.findIndex((s) => s._id === categoryId);
+    if (idx < 0) return;
+    const target = direction === "up" ? idx - 1 : idx + 1;
+    if (target < 0 || target >= siblings.length) return;
+
+    // Swap positions
+    [siblings[idx], siblings[target]] = [siblings[target], siblings[idx]];
+
+    // Assign new sortOrder based on new index
+    const reordered = siblings.map((s, i) => ({ ...s, sortOrder: i }));
+
+    // Optimistic UI: patch the local list
+    setCategories((prev) =>
+      prev.map((c) => {
+        const found = reordered.find((r) => r._id === c._id);
+        return found ? { ...c, sortOrder: found.sortOrder } : c;
+      })
+    );
+
+    await persistOrder(reordered.map((r) => r._id));
+    await fetchCategories();
   };
 
   const renderRows = (nodes: any[], depth = 0): React.ReactElement[] => {
@@ -227,7 +300,23 @@ export default function CategoriesPage() {
             </span>
           </td>
           <td className="p-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => moveCategory(node._id, "up")}
+                className="p-1.5 text-gray-500 hover:text-[#C17A56] hover:bg-[#C17A56]/10 rounded transition-colors"
+                title="Move up"
+                data-testid={`category-move-up-${node._id}`}
+              >
+                <ArrowUp size={14} />
+              </button>
+              <button
+                onClick={() => moveCategory(node._id, "down")}
+                className="p-1.5 text-gray-500 hover:text-[#C17A56] hover:bg-[#C17A56]/10 rounded transition-colors"
+                title="Move down"
+                data-testid={`category-move-down-${node._id}`}
+              >
+                <ArrowDown size={14} />
+              </button>
               <Link href={ADMIN_EDIT_CATEGORY(node._id)} className="p-1.5 text-gray-600 hover:text-[#C17A56] hover:bg-[#C17A56]/10 rounded transition-colors" title="Edit category">
                 <Edit size={16} />
               </Link>

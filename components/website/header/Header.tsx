@@ -342,13 +342,27 @@ export default function Header() {
               )}
 
               {/* Mobile account icon */}
-              <Link
-                href={auth ? (auth.role === "admin" ? "/admin/dashboard" : "/my-account") : "/auth/login"}
-                className="sm:hidden flex flex-col items-center text-[10px] hover:text-gray-600"
-              >
-                <User size={20} />
-                <span className="mt-1">{auth ? "Account" : "Login"}</span>
-              </Link>
+              {auth ? (
+                <Link
+                  href={auth.role === "admin" ? "/admin/dashboard" : "/my-account"}
+                  className="sm:hidden flex flex-col items-center text-[10px] hover:text-gray-600"
+                >
+                  <User size={20} />
+                  <span className="mt-1">Account</span>
+                </Link>
+              ) : (
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    (window as any).showSignInPopup?.();
+                  }}
+                  className="sm:hidden flex flex-col items-center text-[10px] hover:text-gray-600"
+                >
+                  <User size={20} />
+                  <span className="mt-1">Login</span>
+                </a>
+              )}
 
               {/* Wishlist (tablet+) */}
               <Link
@@ -401,7 +415,6 @@ export default function Header() {
           >
             <form onSubmit={handleMobileSearch} className="w-full relative">
               <div className="flex items-center border-2 border-gray-300 rounded-lg bg-white px-3 focus-within:border-[#C17A56] transition-colors">
-                {/* Error fix: mobileSearchQuery || "" */}
                 <input
                   ref={searchInputRef}
                   type="text"

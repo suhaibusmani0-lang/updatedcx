@@ -23,6 +23,7 @@ const ROUTE_ACCESS = {
     "/holidays",
     "/contact",
     "/business-to-business", // 👉 Yeh line add kar di hai taaki page public ho jaye
+    "/track-order",
     "/category",
     "/product",
     "/products",

@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: [
+    "*.preview.emergentagent.com",
+    "*.cluster-12.preview.emergentcf.cloud",
+    "e083d001-b56e-4d8b-a8c1-b7760c4dc9e0.preview.emergentagent.com",
+  ],
   images: {
     remotePatterns: [
       {

@@ -673,18 +673,20 @@ export default function Header() {
         {/* Bottom links */}
         <div className="mt-auto border-t p-5 flex flex-col gap-4">
           <Link
-            href="/stores"
+            href="/business-to-business"
             onClick={() => setMobileMenu(false)}
-            className="flex items-center gap-2 hidden"
+            className="flex items-center gap-2"
+            data-testid="mobile-menu-business-to-business"
           >
             <MapPin size={18} />
-            Find A Store
+            Business To Business
           </Link>
 
           <Link
             href="/track-order"
             onClick={() => setMobileMenu(false)}
-            className="flex items-center gap-2 hidden"
+            className="flex items-center gap-2"
+            data-testid="mobile-menu-track-order"
           >
             <Package size={18} />
             Track Order

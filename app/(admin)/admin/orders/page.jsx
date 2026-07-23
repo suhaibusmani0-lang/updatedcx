@@ -82,6 +82,27 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const assignAwb = async (id) => {
+    const awb = window.prompt("Enter AWB number from ShipMozo:")?.trim();
+    if (!awb) return;
+    const courierName = window.prompt("Courier name (optional):", "")?.trim() || "";
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ awbNumber: awb, courierName, status: "Shipped" }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to assign AWB");
+      }
+      await fetchOrders();
+      alert("AWB assigned successfully. Live tracking will begin shortly.");
+    } catch (e) {
+      alert(e?.message || "Failed to assign AWB");
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -98,15 +119,16 @@ export default function AdminOrdersPage() {
               <th className="border p-3 text-left">Items</th>
               <th className="border p-3 text-left">Amount</th>
               <th className="border p-3 text-left">Status</th>
+              <th className="border p-3 text-left">Tracking</th>
               <th className="border p-3 text-left">Date</th>
               <th className="border p-3 text-left">Ship PDF</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="text-center p-6">Loading...</td></tr>
+              <tr><td colSpan={8} className="text-center p-6">Loading...</td></tr>
             ) : orders.length === 0 ? (
-              <tr><td colSpan={6} className="text-center p-6">No orders found</td></tr>
+              <tr><td colSpan={8} className="text-center p-6">No orders found</td></tr>
             ) : (
               orders.map((order) => (
                 <tr key={order._id}>
@@ -138,6 +160,49 @@ export default function AdminOrdersPage() {
                     >
                       {statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
+                  </td>
+                  <td className="border p-3 text-xs">
+                    {order.awbNumber ? (
+                      <div className="space-y-1">
+                        <p><span className="text-gray-500">AWB:</span> <span className="font-mono">{order.awbNumber}</span></p>
+                        {order.courierName && <p><span className="text-gray-500">Courier:</span> {order.courierName}</p>}
+                        {order.currentTrackingStatus && (
+                          <p className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-blue-700">
+                            {order.currentTrackingStatus}
+                          </p>
+                        )}
+                        <a
+                          href={`/track-order?orderId=${order._id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-[#C17A56] hover:underline"
+                        >
+                          View live tracking →
+                        </a>
+                      </div>
+                    ) : order.shipmozoPushed ? (
+                      <div className="space-y-1">
+                        <span className="text-amber-600">Awaiting AWB</span>
+                        <button
+                          type="button"
+                          onClick={() => assignAwb(order._id)}
+                          className="block text-[#C17A56] hover:underline"
+                        >
+                          + Assign AWB manually
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <span className="text-gray-400">Not pushed</span>
+                        <button
+                          type="button"
+                          onClick={() => assignAwb(order._id)}
+                          className="block text-[#C17A56] hover:underline"
+                        >
+                          + Assign AWB manually
+                        </button>
+                      </div>
+                    )}
                   </td>
                   <td className="border p-3 text-gray-500">
                     {new Date(order.createdAt).toLocaleDateString()}

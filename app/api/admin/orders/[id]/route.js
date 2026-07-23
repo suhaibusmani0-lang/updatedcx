@@ -40,15 +40,36 @@ export async function PUT(req, context) {
     if (!id) return jsonRes(400, "Order id is required");
 
     const body = await req.json().catch(() => ({}));
-    const { status, paymentStatus } = body;
-    const order = await OrderModel.findByIdAndUpdate(
-      id,
-      {
-        ...(status ? { status } : {}),
-        ...(paymentStatus ? { paymentStatus } : {}),
-      },
-      { new: true }
-    );
+    const { status, paymentStatus, awbNumber, courierName, shipmozoOrderId } = body;
+    const setDoc = {
+      ...(status ? { status } : {}),
+      ...(paymentStatus ? { paymentStatus } : {}),
+      ...(awbNumber !== undefined ? { awbNumber: String(awbNumber || "") } : {}),
+      ...(courierName !== undefined ? { courierName: String(courierName || "") } : {}),
+      ...(shipmozoOrderId !== undefined ? { shipmozoOrderId: String(shipmozoOrderId || "") } : {}),
+    };
+
+    const updateOps = { $set: setDoc };
+
+    // If AWB was assigned manually, append an event so timeline shows it
+    if (awbNumber) {
+      const existing = await OrderModel.findById(id).lean();
+      const hasAwbEvent = (existing?.trackingHistory || []).some(
+        (h) => (h.status || "").toLowerCase().includes("awb")
+      );
+      if (!hasAwbEvent) {
+        updateOps.$push = {
+          trackingHistory: {
+            status: "AWB Assigned",
+            remark: `AWB ${awbNumber} assigned${courierName ? ` via ${courierName}` : ""}`,
+            timestamp: new Date(),
+          },
+        };
+        setDoc.currentTrackingStatus = "AWB Assigned";
+      }
+    }
+
+    const order = await OrderModel.findByIdAndUpdate(id, updateOps, { new: true });
 
     if (!order) return jsonRes(404, "Order not found");
     return jsonRes(200, "Order updated", order);

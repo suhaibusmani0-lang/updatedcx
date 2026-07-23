@@ -466,7 +466,15 @@ export default function MyAccount() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex justify-end mt-3">
+                        <div className="flex flex-wrap justify-end gap-2 mt-3">
+                          <a
+                            href={`/track-order?orderId=${order._id}`}
+                            className="px-4 py-2 border border-[#C17A56] text-[#C17A56] rounded-xl text-sm font-medium hover:bg-[#C17A56] hover:text-white transition-colors inline-flex items-center gap-1.5"
+                            data-testid={`track-order-btn-${order._id}`}
+                          >
+                            <Package size={14} />
+                            Track Order
+                          </a>
                           <button
                             type="button"
                             onClick={() => handleReorder(order)}

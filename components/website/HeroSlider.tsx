@@ -80,7 +80,7 @@ export default function HeroSlider() {
             ) : (
               <img
                 src={s.image}
-                alt={s.mode}
+                alt={s.headline}
                 className="w-full h-full object-cover object-center"
               />
             )}
@@ -91,9 +91,6 @@ export default function HeroSlider() {
 
         {/* Desktop Content */}
         <div className="absolute inset-0 flex flex-col justify-end px-5 sm:px-10 md:px-16 lg:px-24 pb-12 sm:pb-16 md:pb-20 lg:pb-28 text-white">
-          <span className="text-[10px] sm:text-xs tracking-[0.3em] uppercase mb-3 bg-[#e2e2e2] text-black px-3 py-1 rounded-full w-fit">
-            {slide.mode} — {slide.eyebrow}
-          </span>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-serif leading-[1.1] mb-3 sm:mb-4 whitespace-pre-line">
             {slide.headline}
           </h1>
@@ -161,7 +158,7 @@ export default function HeroSlider() {
             ) : (
               <img
                 src={s.image}
-                alt={s.mode}
+                alt={s.headline}
                 className="w-full h-full object-cover object-center"
               />
             )}
@@ -172,9 +169,6 @@ export default function HeroSlider() {
 
         {/* Mobile Content - centered layout */}
         <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
-          <span className="text-[10px] tracking-[0.3em] uppercase mb-3 bg-[#e2e2e2] text-black px-3 py-1 rounded-full w-fit">
-            {slide.mode} — {slide.eyebrow}
-          </span>
           <h1 className="text-2xl font-serif leading-[1.1] mb-3 whitespace-pre-line">
             {slide.headline}
           </h1>

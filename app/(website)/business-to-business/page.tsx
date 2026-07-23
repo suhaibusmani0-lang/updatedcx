@@ -24,6 +24,13 @@ export default function B2BPage() {
 
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
         
+        {/* Heading Section (Above the Image) */}
+        <div className="max-w-3xl mx-auto text-center mb-8 sm:mb-10">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif text-[#1A1A1A]">
+            Business to Business
+          </h1>
+        </div>
+
         {/* Top Image Section (First Photo) */}
         <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] rounded-2xl overflow-hidden mb-12 sm:mb-16">
           <Image
@@ -35,11 +42,8 @@ export default function B2BPage() {
           />
         </div>
 
-        {/* Text Content Section */}
+        {/* Text Content Section (Below the Image) */}
         <div className="max-w-3xl mx-auto text-center mb-16 sm:mb-20">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif text-[#1A1A1A] mb-6">
-            Business to Business
-          </h1>
           <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
             Partner with Cosmopolitan Xccessories for premium incense, bakhoor, burners, home décor, and lifestyle essentials. We offer reliable manufacturing, private labeling, bulk orders, and export-ready solutions tailored to your business needs.
           </p>

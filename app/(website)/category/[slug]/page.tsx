@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -238,9 +239,12 @@ export default async function CategoryPage({
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-8">
           <div className="flex flex-col lg:flex-row gap-8">
+            {/* Sidebar wrapped inside Suspense to fix useSearchParams crash */}
             <aside className="hidden lg:block lg:w-64 flex-shrink-0">
               <div className="sticky top-24">
-                <ProductFilterSidebar basePath={`/category/${slug}`} />
+                <Suspense fallback={<div className="h-96 bg-white rounded-xl animate-pulse" />}>
+                  <ProductFilterSidebar basePath={`/category/${slug}`} />
+                </Suspense>
               </div>
             </aside>
 
@@ -396,10 +400,13 @@ export default async function CategoryPage({
           </div>
         </div>
 
-        <MobileToolbar 
-          currentSort={sort} 
-          filterNode={<ProductFilterSidebar basePath={`/category/${slug}`} />} 
-        />
+        {/* Mobile Toolbar wrapped inside Suspense */}
+        <Suspense fallback={null}>
+          <MobileToolbar 
+            currentSort={sort} 
+            filterNode={<ProductFilterSidebar basePath={`/category/${slug}`} />} 
+          />
+        </Suspense>
       </div>
     );
   } catch (err) {

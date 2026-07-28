@@ -158,7 +158,7 @@ async function getCategoryData(slug: string, searchParams: SearchParams) {
       }
     },
     [`category-${slug.toLowerCase()}-${JSON.stringify(searchParams)}`], 
-    { revalidate: 3600 } // 1 ghante tak database hit nahi hoga same filter par!
+    { revalidate: 3600 } 
   );
 
   try {
@@ -194,8 +194,8 @@ export default async function CategoryPage({
       {
         "@type": "ListItem",
         position: 2,
-        name: category.name,
-        item: `${SITE_URL}/category/${category.slug}`,
+        name: category.name || "",
+        item: `${SITE_URL}/category/${category.slug || slug}`,
       },
     ],
   };
@@ -203,12 +203,12 @@ export default async function CategoryPage({
   const itemListSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: `${category.name} — Cosmopolitan Xccessories`,
+    name: `${category.name || "Category"} — Cosmopolitan Xccessories`,
     itemListElement: (products || []).slice(0, 20).map((p: any, idx: number) => ({
       "@type": "ListItem",
       position: idx + 1,
-      url: `${SITE_URL}/product/${p.slug}`,
-      name: p.name,
+      url: `${SITE_URL}/product/${p.slug || ""}`,
+      name: p.name || "",
     })),
   };
 
@@ -222,7 +222,6 @@ export default async function CategoryPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
       />
-      
       
       <div className="w-full bg-[#AEAA9B] bg-opacity-30 py-10 md:py-14 px-4 sm:px-6 md:px-10">
         <div className="max-w-7xl mx-auto flex flex-col items-center justify-center text-center relative z-10">
@@ -239,19 +238,16 @@ export default async function CategoryPage({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar Filters */}
           <aside className="hidden lg:block lg:w-64 flex-shrink-0">
             <div className="sticky top-24">
               <ProductFilterSidebar basePath={`/category/${slug}`} />
             </div>
           </aside>
 
-          {/* Products Grid */}
           <div className="flex-1">
-            {/* Toolbar */}
             <div className="hidden lg:flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <p className="text-sm text-[#1A1A1A]/60">
-                Showing {products.length} of {total} products
+                Showing {products.length || 0} of {total || 0} products
               </p>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -275,11 +271,9 @@ export default async function CategoryPage({
               </div>
             </div>
 
-            {/* Products */}
-            {products.length > 0 ? (
+            {products && products.length > 0 ? (
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
-                  
                   {products.map((product: any) => (
                     <Link
                       key={product._id}
@@ -288,10 +282,10 @@ export default async function CategoryPage({
                     >
                       <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
                         <div className="aspect-square relative">
-                          {product.images?.[0] ? (
+                          {product.images?.[0]?.url ? (
                             <Image
                               src={product.images[0].url}
-                              alt={product.name}
+                              alt={product.name || "Product"}
                               fill
                               className="object-cover group-hover:scale-105 transition-transform"
                             />
@@ -317,11 +311,11 @@ export default async function CategoryPage({
                           </h3>
                           <div className="flex items-center gap-2 mb-2">
                             <p className="font-semibold text-[#AEAA9B]">
-                              ₹{(product.salePrice || product.price)?.toLocaleString()}
+                              ₹{(product.salePrice || product.price || 0).toLocaleString()}
                             </p>
                             {product.salePrice && (
                               <p className="text-sm text-[#1A1A1A]/50 line-through">
-                                ₹{product.price?.toLocaleString()}
+                                ₹{(product.price || 0).toLocaleString()}
                               </p>
                             )}
                           </div>
@@ -350,7 +344,6 @@ export default async function CategoryPage({
                   ))}
                 </div>
 
-                {/* Pagination */}
                 {pages > 1 && (
                   <div className="flex items-center justify-center gap-2">
                     {page > 1 && (
@@ -403,7 +396,6 @@ export default async function CategoryPage({
         </div>
       </div>
 
-      {/* MOBILE STICKY TOOLBAR */}
       <MobileToolbar 
         currentSort={sort} 
         filterNode={<ProductFilterSidebar basePath={`/category/${slug}`} />} 

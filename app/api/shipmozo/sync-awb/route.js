@@ -24,7 +24,8 @@ export async function POST(req) {
     }
 
     // Shipmozo ki Get-Order-Detail API ko call karo
-    const shipmozoRes = await fetch(`https://shipping-api.com/app/api/v1/get-order-detail/${String(order._id)}`, {
+    // order.shipmozoOrderId bhej kar try karo
+const shipmozoRes = await fetch(`https://shipping-api.com/app/api/v1/get-order-detail/${order.shipmozoOrderId}`, {
       method: "GET",
       headers: {
         "public-key": process.env.SHIPMOZO_PUBLIC_KEY,

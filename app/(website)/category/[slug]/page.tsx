@@ -288,7 +288,7 @@ export default async function CategoryPage({
                     >
                       <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
                         <div className="aspect-square relative">
-                          {product.images[0] ? (
+                          {product.images?.[0] ? (
                             <Image
                               src={product.images[0].url}
                               alt={product.name}
@@ -317,11 +317,11 @@ export default async function CategoryPage({
                           </h3>
                           <div className="flex items-center gap-2 mb-2">
                             <p className="font-semibold text-[#AEAA9B]">
-                              ₹{(product.salePrice || product.price).toLocaleString()}
+                              ₹{(product.salePrice || product.price)?.toLocaleString()}
                             </p>
                             {product.salePrice && (
                               <p className="text-sm text-[#1A1A1A]/50 line-through">
-                                ₹{product.price.toLocaleString()}
+                                ₹{product.price?.toLocaleString()}
                               </p>
                             )}
                           </div>
@@ -331,7 +331,7 @@ export default async function CategoryPage({
                                 <span
                                   key={star}
                                   className={`text-xs ${
-                                    star <= Math.round(product.ratings.average || 0)
+                                    star <= Math.round(product.ratings?.average || 0)
                                       ? "text-yellow-400"
                                       : "text-gray-300"
                                   }`}
@@ -341,7 +341,7 @@ export default async function CategoryPage({
                               ))}
                             </div>
                             <span className="text-xs text-[#1A1A1A]/60">
-                              ({product.ratings.count || 0})
+                              ({product.ratings?.count || 0})
                             </span>
                           </div>
                         </div>

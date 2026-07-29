@@ -60,16 +60,9 @@ export default function MyAccount() {
     if (orderIdFromQuery) {
       setActiveTab("orders");
     }
+    
+    // Removed the 8-second setInterval polling from here
     fetchData();
-    let pollId = null;
-    if (activeTab === "orders") {
-      pollId = setInterval(() => {
-        fetchData();
-      }, 8000);
-    }
-    return () => {
-      if (pollId) clearInterval(pollId);
-    };
   }, [activeTab, auth, router, orderIdFromQuery]);
 
   const fetchData = async () => {
@@ -318,7 +311,7 @@ export default function MyAccount() {
       if (res.ok) {
         setPassMessage({ type: "success", text: "Password updated successfully!" });
         setCurrentPassword(""); 
-        setNewPassword("");
+        newPassword("");
       } else {
         setPassMessage({ type: "error", text: data.message || "Failed to update password." });
       }

@@ -131,7 +131,8 @@ export default function HeroSlider() {
               key={i}
               onClick={() => setCurrent(i)}
               aria-label={`Slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              /* YAHAN FIX KIYA HAI: 'relative before:absolute before:-inset-3' add kiya touch target bada karne ke liye */
+              className={`h-1.5 rounded-full transition-all duration-300 relative before:absolute before:-inset-3 ${
                 i === current ? "bg-white w-6 sm:w-8" : "bg-white/50 w-1.5"
               }`}
             />
@@ -196,7 +197,8 @@ export default function HeroSlider() {
               key={i}
               onClick={() => setCurrent(i)}
               aria-label={`Slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              /* YAHAN BHI FIX KIYA HAI: Touch target area increase karne ke liye */
+              className={`h-1.5 rounded-full transition-all duration-300 relative before:absolute before:-inset-3 ${
                 i === current ? "bg-white w-6" : "bg-white/50 w-1.5"
               }`}
             />

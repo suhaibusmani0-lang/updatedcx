@@ -1,6 +1,5 @@
 "use client";
 
-
 import Image from "next/image";
 
 import LogoutButton from "@/components/application/LogoutButton";
@@ -28,7 +27,8 @@ const {toggleSidebar}=useSidebar();
       <div className="flex h-16 items-center justify-between px-4 lg:px-6">
         {/* Left Side */}
         <div className="flex items-center gap-4">
-          <button className="rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden">
+          {/* YAHAN FIX KIYA HAI: aria-label="Toggle Menu" */}
+          <button aria-label="Toggle Menu" className="rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden">
             <Menu size={20} />
           </button>
 
@@ -56,7 +56,8 @@ const {toggleSidebar}=useSidebar();
         {/* Right Side */}
         <div className="flex items-center gap-4">
           {/* Notification */}
-          <button className="relative rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
+          {/* YAHAN FIX KIYA HAI: aria-label="Notifications" */}
+          <button aria-label="Notifications" className="relative rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
             <Bell size={20} />
 
             <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500"></span>
@@ -65,7 +66,8 @@ const {toggleSidebar}=useSidebar();
           {/* Profile Dropdown */}
           <ThemeSwitch/>
          <UserDropdown/>
-         <Button onClick={toggleSidebar} type="button" size="icon" className="ms-2 md:hidden">
+         {/* YAHAN FIX KIYA HAI: aria-label="Toggle Sidebar" */}
+         <Button aria-label="Toggle Sidebar" onClick={toggleSidebar} type="button" size="icon" className="ms-2 md:hidden">
             <RiMenu4Fill className="h-6 w-6" />
          </Button>
         </div>

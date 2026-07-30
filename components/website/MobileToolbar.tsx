@@ -63,7 +63,8 @@ export default function MobileToolbar({
           <div className="w-full bg-white rounded-t-2xl pb-6 animate-in slide-in-from-bottom-2 duration-300">
             <div className="flex justify-between items-center p-4 border-b border-gray-100">
               <h3 className="font-semibold text-lg">Sort by</h3>
-              <button onClick={() => setShowSort(false)}>
+              {/* YAHAN FIX KIYA HAI: aria-label="Close" add kiya hai */}
+              <button aria-label="Close" onClick={() => setShowSort(false)}>
                 <X size={20} />
               </button>
             </div>
@@ -103,7 +104,9 @@ export default function MobileToolbar({
             {/* Header */}
             <div className="flex justify-between items-center p-4 border-b border-gray-100 shadow-sm">
               <h3 className="font-semibold text-lg">Filters</h3>
+              {/* YAHAN FIX KIYA HAI: aria-label="Close" add kiya hai */}
               <button 
+                aria-label="Close"
                 onClick={() => setShowFilter(false)}
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors"
               >

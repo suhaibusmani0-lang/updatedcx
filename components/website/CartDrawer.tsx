@@ -144,7 +144,8 @@ export default function CartDrawer({ open, onClose }: { open: boolean; onClose: 
               Cart ({items.reduce((s, i) => s + i.qty, 0)})
             </span>
           </div>
-          <button onClick={onClose} className="text-[#1A1A1A]/60 hover:text-[#1A1A1A]">
+          {/* YAHAN FIX KIYA HAI: aria-label="Close" add kiya hai */}
+          <button onClick={onClose} aria-label="Close" className="text-[#1A1A1A]/60 hover:text-[#1A1A1A]">
             <X size={20} />
           </button>
         </div>

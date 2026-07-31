@@ -1,0 +1,39 @@
+name = "cosmopolitan-clone"
+main = ".open-next/worker.js"
+compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[vars]
+MONGODB_URI = "mongodb://support_db_user:pjOZEIPe0AhRB1TU@cosmopolitanxccessories.gswb8pb.mongodb.net:27017/support_db?retryWrites=true&w=majority&tls=true&appName=CosmopolitanXccessories"
+JWT_SECRET = "qoDdI6r7NMLgoMp5SSi0w64knbNEcmVHlxNn2FYvmU8="
+NODEMAILER_HOST = "smtp.gmail.com"
+NODEMAILER_PORT = "587"
+NODEMAILER_USER = "projectdemohp@gmail.com"
+NODEMAILER_PASS = "xplxtibwwbjxdihq"
+NEXT_PUBLIC_BASE_URL = "https://finalcxcshop.projectdemohp.workers.dev"
+NEXT_PUBLIC_APP_URL = "https://finalcxcshop.projectdemohp.workers.dev"
+NODE_ENV = "production"
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "dd62irk0g"
+NEXT_PUBLIC_CLOUDINARY_API_KEY = "257211478749733"
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET = "cn"
+CLOUDINARY_API_SECRET = "oV3u2u_DnMk-fNgfzoSx0v4mTcA"
+RAZORPAY_KEY_ID = "rzp_test_1g0k6y7J"
+RAZORPAY_KEY_SECRET = "4eB7r0k5Q2J1Y6pWbK1q6mX5"
+NEXT_PUBLIC_FIREBASE_API_KEY = "AIzaSyDUqMbB7CmW3pSa30pYpzgIk0NOEAqcur0"
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = "cxproject-4eff1.firebaseapp.com"
+NEXT_PUBLIC_FIREBASE_PROJECT_ID = "cxproject-4eff1"
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = "cxproject-4eff1.firebasestorage.app"
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = "1051371564600"
+NEXT_PUBLIC_FIREBASE_APP_ID = "1:1051371564600:web:bc4003a9971be8fba300cd"
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID = "G-J3ZRDVT2KH"
+
+# Shiprocket (optional). If empty, checkout uses fallback shipping (flat ₹99 / free above ₹2999).
+# Get credentials from https://app.shiprocket.in/api-user
+SHIPROCKET_BASE_URL = "https://apiv2.shiprocket.in"
+SHIPROCKET_EMAIL = ""
+SHIPROCKET_PASSWORD = ""
+SHIPROCKET_PICKUP_PINCODE = "110001"

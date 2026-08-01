@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { login } from '@/store/reducer/authReducer';
 import { showToast } from '@/lib/showToast';
-import { GoogleAuthProvider, signInWithPopup, signInWithPhoneNumber } from 'firebase/auth';
-import { auth, isFirebaseConfigured, createFirebaseRecaptchaVerifier } from '@/lib/firebase';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth, isFirebaseConfigured } from '@/lib/firebase'; // Removed unused firebase imports
 
 export default function SignInPopup() {
   const [open, setOpen] = useState(false);
@@ -13,7 +13,6 @@ export default function SignInPopup() {
   useEffect(() => {
     const openHandler = () => setOpen(true);
     window.addEventListener('open-signin-popup', openHandler);
-    // expose a simple global helper (optional)
     window.showSignInPopup = () => setOpen(true);
 
     return () => {
@@ -24,7 +23,7 @@ export default function SignInPopup() {
 
   const dispatch = useDispatch();
 
-  const [step, setStep] = useState('credentials'); // 'credentials' | 'otp'
+  const [step, setStep] = useState('credentials');
   const [emailForOtp, setEmailForOtp] = useState('');
   const [loginMethod, setLoginMethod] = useState('email');
   const [mobilePhone, setMobilePhone] = useState('');
@@ -32,7 +31,6 @@ export default function SignInPopup() {
   const [mobileStep, setMobileStep] = useState('phone');
   const [mobileLoading, setMobileLoading] = useState(false);
   const [mobileError, setMobileError] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
@@ -56,7 +54,6 @@ export default function SignInPopup() {
     }
   })();
 
-  // helper to POST JSON and throw on non-ok
   async function postJson(url, body) {
     const res = await fetch(url, {
       method: 'POST',
@@ -74,6 +71,7 @@ export default function SignInPopup() {
     return data;
   }
 
+  // --- Email Login / Register / Forgot Password Logic Unchanged ---
   const handleCredentialsSubmit = async (e) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -134,7 +132,6 @@ export default function SignInPopup() {
     try {
       const result = await postJson('/api/auth/register', { name, phone, email, password });
       showToast('success', result?.message || 'Registered successfully');
-      // After registration, go back to sign-in so user can login (email verification may be required)
       setStep('credentials');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Registration failed';
@@ -145,7 +142,6 @@ export default function SignInPopup() {
     }
   };
 
-    
   const handleResendOtp = async () => {
     if (!emailForOtp) return showToast('error', 'No email to resend OTP');
     try {
@@ -163,7 +159,6 @@ export default function SignInPopup() {
     }
   };
 
-  // Forgot password handlers
   const handleForgotSendOtp = async (e) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -233,28 +228,23 @@ export default function SignInPopup() {
     }
   };
 
+  // --- UPDATED SMS API LOGIC START ---
   const handleSendMobileOtp = async (e) => {
     e.preventDefault();
     setMobileError('');
     setMobileLoading(true);
 
     try {
-      if (!isFirebaseConfigured) {
-        throw new Error('Firebase is not configured. Please set up NEXT_PUBLIC_FIREBASE_* values.');
-      }
-      if (!auth) {
-        throw new Error('Firebase auth is unavailable');
-      }
       const normalizedPhone = (mobilePhone || '').trim();
-      if (!normalizedPhone) {
-        throw new Error('Phone number is required');
+      if (!normalizedPhone || normalizedPhone.length !== 10) {
+        throw new Error('Please enter a valid 10 digit mobile number');
       }
 
-      const verifier = window.recaptchaVerifier || await createFirebaseRecaptchaVerifier('firebase-recaptcha-container');
-      const confirmation = await signInWithPhoneNumber(auth, normalizedPhone, verifier);
-      setConfirmationResult(confirmation);
+      // Call our new custom backend API instead of Firebase
+      const result = await postJson('/api/auth/send-mobile-otp', { mobile: normalizedPhone });
+      
       setMobileStep('otp');
-      showToast('success', 'OTP sent to your phone number');
+      showToast('success', result?.message || 'OTP sent to your phone number');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to send OTP';
       setMobileError(message);
@@ -270,37 +260,20 @@ export default function SignInPopup() {
     setMobileLoading(true);
 
     try {
-      if (!confirmationResult) {
-        throw new Error('Please request a code first');
-      }
       const otp = (mobileOtp || '').trim();
       if (!otp) {
         throw new Error('OTP is required');
       }
 
-      const userCredential = await confirmationResult.confirm(otp);
-      const firebaseUser = userCredential.user;
+      // Call our new custom verify API
+      const result = await postJson('/api/auth/verify-mobile-otp', { mobile: mobilePhone, otp: otp });
 
-      const response = await fetch('/api/auth/firebase-phone-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: firebaseUser.phoneNumber || mobilePhone,
-          name: firebaseUser.displayName || mobilePhone,
-          uid: firebaseUser.uid,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.message || 'Unable to complete login');
-      }
-
-      const user = data?.data?.user;
+      const user = result?.data?.user;
       if (user) {
-        dispatch(login(user));
+        dispatch(login(user)); // Update Redux state
       }
-      showToast('success', data?.message || 'Logged in successfully');
+      
+      showToast('success', result?.message || 'Logged in successfully');
       setOpen(false);
       try { window.location.reload(); } catch (e) {}
     } catch (err) {
@@ -311,6 +284,7 @@ export default function SignInPopup() {
       setMobileLoading(false);
     }
   };
+  // --- UPDATED SMS API LOGIC END ---
 
   const handleGoogleLogin = async () => {
     setError('');
@@ -475,7 +449,7 @@ export default function SignInPopup() {
                       required
                       style={inputStyle}
                     />
-                    <div id="firebase-recaptcha-container" />
+                    {/* Firebase recaptcha div removed, no longer needed */}
                     <button
                       type="submit"
                       style={primaryBtnStyle}
@@ -525,6 +499,7 @@ export default function SignInPopup() {
           </div>
         )}
 
+        {/* ... (rest of the steps remain perfectly unchanged) ... */}
         {step === 'otp' && (
           <form key="otp-form" onSubmit={handleOtpSubmit}>
             <p style={{marginBottom:8}}>
@@ -709,7 +684,6 @@ export default function SignInPopup() {
   );
 }
 
-// Inline styles to avoid editing your global CSS
 const overlayStyle = {
   position: 'fixed',
   inset: 0,

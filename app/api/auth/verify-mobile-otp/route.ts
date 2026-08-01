@@ -1,39 +1,57 @@
 // app/api/auth/verify-mobile-otp/route.ts
 import { NextResponse } from 'next/server';
-// You should import your database logic here to fetch/create user
- import dbConnect from '@/lib/databaseConnection'; 
-// import User from '@/models/User';
+import { connectDB } from '@/lib/databaseConnection'; // Correct named import
+import Otp from '@/models/Otp';
+import UserModel from '@/models/User';
 
 export async function POST(req: Request) {
   try {
+    await connectDB(); 
+
     const { mobile, otp } = await req.json();
 
-    const storedOtp = global.otpStore?.get(mobile);
-
-    if (!storedOtp || storedOtp !== otp) {
-      return NextResponse.json({ success: false, message: 'Invalid or expired OTP' }, { status: 400 });
+    if (!mobile || !otp) {
+      return NextResponse.json({ success: false, message: 'Mobile aur OTP dono zaroori hain' }, { status: 400 });
     }
 
-    // OTP is correct! Clear it from memory
-    global.otpStore.delete(mobile);
+    // 1. Database se OTP match karna
+    const otpRecord = await Otp.findOne({ phone: mobile });
 
-    // TODO: Create or fetch user from your MongoDB/Database based on mobile number
-    // Example:
-    // await dbConnect();
-    // let user = await User.findOne({ phone: mobile });
-    // if(!user) { user = await User.create({ phone: mobile, name: "User" }); }
+    if (!otpRecord || otpRecord.otp !== otp) {
+      return NextResponse.json({ success: false, message: 'Invalid ya Expired OTP' }, { status: 400 });
+    }
 
-    // Mocking a successful user return for Redux
-    const user = { phone: mobile, name: "Mobile User", id: Date.now().toString() };
+    // 2. OTP verify ho gaya, ab usko database se delete kar do
+    await Otp.deleteOne({ phone: mobile });
+
+    // 3. User ko dhundho, agar nahi hai toh create karo
+    let user = await UserModel.findOne({ phone: mobile });
+    
+    if (!user) {
+      user = await UserModel.create({ 
+        phone: mobile, 
+        name: "Customer", 
+        authProvider: "mobile", 
+        role: "user"
+      });
+    }
 
     return NextResponse.json({ 
         success: true, 
         message: 'Logged in successfully',
-        data: { user } 
+        data: { 
+          user: {
+            id: user._id.toString(),
+            phone: user.phone,
+            name: user.name,
+            role: user.role,
+            avatar: user.avatar?.url || ""
+          }
+        } 
     });
 
   } catch (error) {
-    console.error("OTP Verify Error:", error);
+    console.error("Verify OTP Error:", error);
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -1,7 +1,7 @@
 // app/api/auth/verify-mobile-otp/route.ts
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/databaseConnection';
-import UserModel from '@/models/User';
+import UserModel from '@/models/User.model';
 
 const globalAny: any = global;
 globalAny.otpStore = globalAny.otpStore || new Map();
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Mobile aur OTP dono zaroori hain' }, { status: 400 });
     }
 
-    // 1. Check OTP from memory store (matches send-mobile-otp)
+    // 1. Check OTP from memory store
     const storedOtp = globalAny.otpStore.get(mobile);
 
     if (!storedOtp || storedOtp !== otp) {

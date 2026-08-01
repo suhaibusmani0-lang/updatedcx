@@ -1,8 +1,10 @@
 // app/api/auth/verify-mobile-otp/route.ts
 import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/databaseConnection'; // Correct named import
-import Otp from '@/models/Otp';
+import { connectDB } from '@/lib/databaseConnection';
 import UserModel from '@/models/User';
+
+const globalAny: any = global;
+globalAny.otpStore = globalAny.otpStore || new Map();
 
 export async function POST(req: Request) {
   try {
@@ -14,15 +16,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Mobile aur OTP dono zaroori hain' }, { status: 400 });
     }
 
-    // 1. Database se OTP match karna
-    const otpRecord = await Otp.findOne({ phone: mobile });
+    // 1. Check OTP from memory store (matches send-mobile-otp)
+    const storedOtp = globalAny.otpStore.get(mobile);
 
-    if (!otpRecord || otpRecord.otp !== otp) {
+    if (!storedOtp || storedOtp !== otp) {
       return NextResponse.json({ success: false, message: 'Invalid ya Expired OTP' }, { status: 400 });
     }
 
-    // 2. OTP verify ho gaya, ab usko database se delete kar do
-    await Otp.deleteOne({ phone: mobile });
+    // 2. OTP verify ho gaya, memory se delete kar do
+    globalAny.otpStore.delete(mobile);
 
     // 3. User ko dhundho, agar nahi hai toh create karo
     let user = await UserModel.findOne({ phone: mobile });
@@ -50,8 +52,8 @@ export async function POST(req: Request) {
         } 
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Verify OTP Error:", error);
-    return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

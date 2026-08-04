@@ -3,7 +3,7 @@ import { connectDB } from '@/lib/databaseConnection';
 import UserModel from '@/models/User.model';
 import OtpModel from '@/models/Otp.model'; 
 
-export async function POST(req) { // 👈 Yahan se ': Request' hata diya hai
+export async function POST(req) { // 👈 Dekho yahan se ': Request' hata diya hai
   try {
     await connectDB(); 
 
@@ -58,7 +58,7 @@ export async function POST(req) { // 👈 Yahan se ': Request' hata diya hai
         } 
     });
 
-  } catch (error) { // 👈 Yahan se ': any' hata diya hai
+  } catch (error) { // 👈 Yahan se ': any' bhi hata diya hai
     console.error("Verify OTP Error:", error);
     return NextResponse.json({ success: false, message: error.message || 'Internal Server Error' }, { status: 500 });
   }

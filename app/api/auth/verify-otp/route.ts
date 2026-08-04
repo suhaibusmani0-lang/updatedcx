@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/databaseConnection';
 import UserModel from '@/models/User.model';
-import OtpModel from '@/models/Otp.model'; // Database model import kiya hai
+import OtpModel from '@/models/Otp.model'; 
 
 export async function POST(req: Request) {
   try {
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Mobile and OTP are required' }, { status: 400 });
     }
 
-    const identifier = `${mobile}@mobile.com`; // Wahi format jo send karte waqt use kiya tha
+    const identifier = `${mobile}@mobile.com`; 
 
     // 1. Check OTP from Database
     const otpRecord = await OtpModel.findOne({ email: identifier, otp: otp });
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       // Create a new user if not found
       user = await UserModel.create({ 
         phone: mobile, 
-        name: "Customer", // Default name, will be updated via profile form
+        name: "Customer", 
         authProvider: "mobile", 
         role: "user"
       });
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
             role: user.role,
             avatar: user.avatar?.url || ""
           },
-          isNewUser: isNewUser // Tells frontend to show Name/Email form
+          isNewUser: isNewUser 
         } 
     });
 

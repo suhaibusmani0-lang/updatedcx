@@ -5,7 +5,7 @@ import { useDispatch } from 'react-redux';
 import { login } from '@/store/reducer/authReducer';
 import { showToast } from '@/lib/showToast';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '@/lib/firebase'; // Removed unused firebase imports
+import { auth, isFirebaseConfigured } from '@/lib/firebase'; 
 
 export default function SignInPopup() {
   const [open, setOpen] = useState(false);
@@ -25,17 +25,28 @@ export default function SignInPopup() {
 
   const [step, setStep] = useState('credentials');
   const [emailForOtp, setEmailForOtp] = useState('');
-  const [loginMethod, setLoginMethod] = useState('email');
+  
+  // 1. CHENGE: Default loginMethod ko 'mobile' kar diya hai
+  const [loginMethod, setLoginMethod] = useState('mobile'); 
+  
   const [mobilePhone, setMobilePhone] = useState('');
   const [mobileOtp, setMobileOtp] = useState('');
   const [mobileStep, setMobileStep] = useState('phone');
   const [mobileLoading, setMobileLoading] = useState(false);
   const [mobileError, setMobileError] = useState('');
+  
+  // 2. CHANGE: Nayi states T&C aur New User ke liye add ki hain
+  const [isTcAccepted, setIsTcAccepted] = useState(false); 
+  const [isNewUserStep, setIsNewUserStep] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
   const headerText = (() => {
+    if (isNewUserStep) return 'Complete your profile details'; // Naye user ke liye header
     switch (step) {
       case 'credentials':
         return 'Sign in to continue to your account';
@@ -239,8 +250,12 @@ export default function SignInPopup() {
       if (!normalizedPhone || normalizedPhone.length !== 10) {
         throw new Error('Please enter a valid 10 digit mobile number');
       }
+      
+      // 3. CHANGE: Check for T&C acceptance
+      if (!isTcAccepted) {
+        throw new Error('Please accept the Terms of Service & Privacy Policy');
+      }
 
-      // Call our new custom backend API instead of Firebase
       const result = await postJson('/api/auth/send-mobile-otp', { mobile: normalizedPhone });
       
       setMobileStep('otp');
@@ -265,23 +280,56 @@ export default function SignInPopup() {
         throw new Error('OTP is required');
       }
 
-      // Call our new custom verify API
       const result = await postJson('/api/auth/verify-mobile-otp', { mobile: mobilePhone, otp: otp });
 
       const user = result?.data?.user;
-      if (user) {
-        dispatch(login(user)); // Update Redux state
-      }
       
-      showToast('success', result?.message || 'Logged in successfully');
-      setOpen(false);
-      try { window.location.reload(); } catch (e) {}
+      // 4. CHANGE: Check if user is new from backend
+      if (result?.data?.isNewUser) {
+        setIsNewUserStep(true);
+        showToast('success', 'OTP Verified! Please enter your details.');
+      } else {
+        if (user) {
+          dispatch(login(user));
+        }
+        showToast('success', result?.message || 'Logged in successfully');
+        setOpen(false);
+        try { window.location.reload(); } catch (e) {}
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'OTP verification failed';
       setMobileError(message);
       showToast('error', message);
     } finally {
       setMobileLoading(false);
+    }
+  };
+
+  // 5. CHANGE: Naya function profile complete karne ke liye
+  const handleCompleteProfile = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await postJson('/api/auth/update-profile', { 
+        phone: mobilePhone, 
+        name: newUserName, 
+        email: newUserEmail 
+      });
+
+      const updatedUser = result?.data?.user;
+      if (updatedUser) dispatch(login(updatedUser)); 
+      
+      showToast('success', 'Profile updated successfully!');
+      setOpen(false);
+      try { window.location.reload(); } catch (e) {}
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update profile';
+      setError(message);
+      showToast('error', message);
+    } finally {
+      setLoading(false);
     }
   };
   // --- UPDATED SMS API LOGIC END ---
@@ -351,155 +399,200 @@ export default function SignInPopup() {
           <span className="block w-min mx-auto sm:w-auto text-center text-base sm:text-lg font-bold uppercase">
                       Cosmopolitan Xccessories
                     </span>
-         
+          
         <p className='text-center' style={{color:'#555', marginBottom:16}}>{headerText}</p>
 
-        {step === 'credentials' && (
-          <div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginMethod('email');
-                  setMobileError('');
-                  setError('');
-                  setMobileStep('phone');
-                }}
-                style={{
-                  flex: 1,
-                  padding: '10px 12px',
-                  borderRadius: 6,
-                  border: loginMethod === 'email' ? '1px solid #111827' : '1px solid #d1d5db',
-                  background: loginMethod === 'email' ? '#111827' : '#fff',
-                  color: loginMethod === 'email' ? '#fff' : '#111827',
-                  cursor: 'pointer',
-                }}
-              >
-                Email
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginMethod('mobile');
-                  setMobileError('');
-                  setError('');
-                  setMobileStep('phone');
-                }}
-                style={{
-                  flex: 1,
-                  padding: '10px 12px',
-                  borderRadius: 6,
-                  border: loginMethod === 'mobile' ? '1px solid #111827' : '1px solid #d1d5db',
-                  background: loginMethod === 'mobile' ? '#111827' : '#fff',
-                  color: loginMethod === 'mobile' ? '#fff' : '#111827',
-                  cursor: 'pointer',
-                }}
-              >
-                Mobile
-              </button>
+        {/* 6. CHANGE: Agar Naya User Hai Toh Ye Form Dikhayega */}
+        {isNewUserStep ? (
+          <form onSubmit={handleCompleteProfile}>
+            <input 
+              value={newUserName} 
+              onChange={(e) => setNewUserName(e.target.value)} 
+              type="text" 
+              placeholder="Full Name" 
+              required 
+              style={inputStyle} 
+            />
+            <input 
+              value={newUserEmail} 
+              onChange={(e) => setNewUserEmail(e.target.value)} 
+              type="email" 
+              placeholder="Email Address" 
+              required 
+              style={inputStyle} 
+            />
+            <button type="submit" style={primaryBtnStyle} disabled={loading}>
+              {loading ? 'Saving...' : 'Complete Profile'}
+            </button>
+            {error && <div style={{color:'red', marginTop:8}}>{error}</div>}
+          </form>
+        ) : (
+          /* Puraani Logic Waisi Ki Waisi */
+          step === 'credentials' && (
+            <div>
+              {/* Tab Buttons tabhi dikhenge jab user Phone/Email daal raha ho, OTP daalte waqt nahi */}
+              {mobileStep === 'phone' && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginMethod('email');
+                      setMobileError('');
+                      setError('');
+                      setMobileStep('phone');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px 12px',
+                      borderRadius: 6,
+                      border: loginMethod === 'email' ? '1px solid #111827' : '1px solid #d1d5db',
+                      background: loginMethod === 'email' ? '#111827' : '#fff',
+                      color: loginMethod === 'email' ? '#fff' : '#111827',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginMethod('mobile');
+                      setMobileError('');
+                      setError('');
+                      setMobileStep('phone');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px 12px',
+                      borderRadius: 6,
+                      border: loginMethod === 'mobile' ? '1px solid #111827' : '1px solid #d1d5db',
+                      background: loginMethod === 'mobile' ? '#111827' : '#fff',
+                      color: loginMethod === 'mobile' ? '#fff' : '#111827',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Mobile
+                  </button>
+                </div>
+              )}
+
+              {loginMethod === 'email' ? (
+                <form key="email-login-form" onSubmit={handleCredentialsSubmit}>
+                  <input 
+                    name="email" 
+                    type="email" 
+                    placeholder="Email" 
+                    required 
+                    style={inputStyle} 
+                  />
+                  <input 
+                    name="password" 
+                    type="password" 
+                    placeholder="Password" 
+                    required 
+                    style={inputStyle} 
+                  />
+                  <button 
+                    type="submit" 
+                    style={primaryBtnStyle} 
+                    disabled={loading}
+                  >
+                    {loading ? 'Signing in...' : 'Sign In'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGoogleLogin}
+                    disabled={googleLoading || loading}
+                    style={{
+                      ...primaryBtnStyle,
+                      marginTop: 10,
+                      background: '#fff',
+                      color: '#111827',
+                      border: '1px solid #d1d5db',
+                    }}
+                  >
+                    {googleLoading ? 'Connecting...' : 'Continue with Google'}
+                  </button>
+                  {error && <div style={{color:'red', marginTop:8}}>{error}</div>}
+                </form>
+              ) : (
+                <form key="mobile-login-form" onSubmit={mobileStep === 'phone' ? handleSendMobileOtp : handleVerifyMobileOtp}>
+                  {mobileStep === 'phone' ? (
+                    <>
+                      <input
+                        value={mobilePhone}
+                        onChange={(e) => setMobilePhone(e.target.value)}
+                        type="tel"
+                        placeholder="Mobile number"
+                        required
+                        style={inputStyle}
+                      />
+                      
+                      {/* 7. CHANGE: Naya T&C Checkbox Add Kiya Hai (Minimal style jo fit ho jaye) */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '14px', fontSize: '13px', color: '#555' }}>
+                        <input
+                          type="checkbox"
+                          id="tc-checkbox"
+                          checked={isTcAccepted}
+                          onChange={(e) => setIsTcAccepted(e.target.checked)}
+                          style={{ marginTop: '3px', cursor: 'pointer' }}
+                        />
+                        <label htmlFor="tc-checkbox" style={{ cursor: 'pointer', lineHeight: '1.4' }}>
+                          By continuing, I agree to the <a href="/terms" style={{textDecoration: 'underline'}}>Terms of Service</a> & <a href="/privacy" style={{textDecoration: 'underline'}}>Privacy Policy</a>.
+                        </label>
+                      </div>
+
+                      <button
+                        type="submit"
+                        style={primaryBtnStyle}
+                        disabled={mobileLoading || !isTcAccepted}
+                      >
+                        {mobileLoading ? 'Sending OTP...' : 'Send OTP'}
+                      </button>
+                      {mobileError && <div style={{color:'red', marginTop:8}}>{mobileError}</div>}
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        value={mobileOtp}
+                        onChange={(e) => setMobileOtp(e.target.value)}
+                        type="text"
+                        placeholder="Enter OTP"
+                        required
+                        style={inputStyle}
+                      />
+                      <button
+                        type="submit"
+                        style={primaryBtnStyle}
+                        disabled={mobileLoading}
+                      >
+                        {mobileLoading ? 'Verifying...' : 'Verify OTP'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMobileStep('phone');
+                          setMobileOtp('');
+                          setMobileError('');
+                        }}
+                        style={{
+                          ...linkBtnStyle,
+                          display: 'block',
+                          marginTop: 12,
+                        }}
+                      >
+                        Back to phone entry
+                      </button>
+                      {mobileError && <div style={{color:'red', marginTop:8}}>{mobileError}</div>}
+                    </>
+                  )}
+                </form>
+              )}
             </div>
-            {loginMethod === 'email' ? (
-              <form key="email-login-form" onSubmit={handleCredentialsSubmit}>
-                <input 
-                  name="email" 
-                  type="email" 
-                  placeholder="Email" 
-                  required 
-                  style={inputStyle} 
-                />
-                <input 
-                  name="password" 
-                  type="password" 
-                  placeholder="Password" 
-                  required 
-                  style={inputStyle} 
-                />
-                <button 
-                  type="submit" 
-                  style={primaryBtnStyle} 
-                  disabled={loading}
-                >
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  disabled={googleLoading || loading}
-                  style={{
-                    ...primaryBtnStyle,
-                    marginTop: 10,
-                    background: '#fff',
-                    color: '#111827',
-                    border: '1px solid #d1d5db',
-                  }}
-                >
-                  {googleLoading ? 'Connecting...' : 'Continue with Google'}
-                </button>
-                {error && <div style={{color:'red', marginTop:8}}>{error}</div>}
-              </form>
-            ) : (
-              <form key="mobile-login-form" onSubmit={mobileStep === 'phone' ? handleSendMobileOtp : handleVerifyMobileOtp}>
-                {mobileStep === 'phone' ? (
-                  <>
-                    <input
-                      value={mobilePhone}
-                      onChange={(e) => setMobilePhone(e.target.value)}
-                      type="tel"
-                      placeholder="Mobile number"
-                      required
-                      style={inputStyle}
-                    />
-                    {/* Firebase recaptcha div removed, no longer needed */}
-                    <button
-                      type="submit"
-                      style={primaryBtnStyle}
-                      disabled={mobileLoading}
-                    >
-                      {mobileLoading ? 'Sending OTP...' : 'Send OTP'}
-                    </button>
-                    {mobileError && <div style={{color:'red', marginTop:8}}>{mobileError}</div>}
-                  </>
-                ) : (
-                  <>
-                    <input
-                      value={mobileOtp}
-                      onChange={(e) => setMobileOtp(e.target.value)}
-                      type="text"
-                      placeholder="Enter OTP"
-                      required
-                      style={inputStyle}
-                    />
-                    <button
-                      type="submit"
-                      style={primaryBtnStyle}
-                      disabled={mobileLoading}
-                    >
-                      {mobileLoading ? 'Verifying...' : 'Verify OTP'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMobileStep('phone');
-                        setMobileOtp('');
-                        setMobileError('');
-                      }}
-                      style={{
-                        ...linkBtnStyle,
-                        display: 'block',
-                        marginTop: 12,
-                      }}
-                    >
-                      Back to phone entry
-                    </button>
-                    {mobileError && <div style={{color:'red', marginTop:8}}>{mobileError}</div>}
-                  </>
-                )}
-              </form>
-            )}
-          </div>
+          )
         )}
 
-        {/* ... (rest of the steps remain perfectly unchanged) ... */}
+        {/* ... YAHAN SE NEECHE POORA CODE TUMHARA HI HAI (Unchanged) ... */}
         {step === 'otp' && (
           <form key="otp-form" onSubmit={handleOtpSubmit}>
             <p style={{marginBottom:8}}>
@@ -611,33 +704,37 @@ export default function SignInPopup() {
           </form>
         )}
 
-        <div style={{textAlign:'center', marginTop:12}}>
-          <button 
-            style={linkBtnStyle} 
-            onClick={() => setStep('forgot-email')}
-          >
-            Forgot password?
-          </button>
-        </div>
-        <div style={{textAlign:'center', marginTop:12}}>
-          {step !== 'register' ? (
-            <button 
-              style={linkBtnStyle} 
-              onClick={() => setStep('register')}
-            >
-              Don't have an account? Sign Up
-            </button>
-          ) : (
-            <button 
-              style={linkBtnStyle} 
-              onClick={() => setStep('credentials')}
-            >
-              ← Back to Sign In
-            </button>
-          )}
-        </div>
+        {!isNewUserStep && (
+          <>
+            <div style={{textAlign:'center', marginTop:12}}>
+              <button 
+                style={linkBtnStyle} 
+                onClick={() => setStep('forgot-email')}
+              >
+                Forgot password?
+              </button>
+            </div>
+            <div style={{textAlign:'center', marginTop:12}}>
+              {step !== 'register' ? (
+                <button 
+                  style={linkBtnStyle} 
+                  onClick={() => setStep('register')}
+                >
+                  Don't have an account? Sign Up
+                </button>
+              ) : (
+                <button 
+                  style={linkBtnStyle} 
+                  onClick={() => setStep('credentials')}
+                >
+                  ← Back to Sign In
+                </button>
+              )}
+            </div>
+          </>
+        )}
 
-        {step === 'register' && (
+        {step === 'register' && !isNewUserStep && (
           <div style={{marginTop:16}}>
             <form key="register-form" onSubmit={handleRegisterSubmit}>
               <input 

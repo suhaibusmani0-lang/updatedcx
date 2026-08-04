@@ -1,4 +1,3 @@
-// app/api/auth/verify-mobile-otp/route.ts
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/databaseConnection';
 import UserModel from '@/models/User.model';
@@ -26,16 +25,22 @@ export async function POST(req: Request) {
     // 2. OTP verify ho gaya, memory se delete kar do
     globalAny.otpStore.delete(mobile);
 
-    // 3. User ko dhundho, agar nahi hai toh create karo
+    // 3. User check karo
     let user = await UserModel.findOne({ phone: mobile });
+    let isNewUser = false;
     
     if (!user) {
+      // Naya user create karo
       user = await UserModel.create({ 
         phone: mobile, 
-        name: "Customer", 
+        name: "Customer", // Default name, aage form se update hoga
         authProvider: "mobile", 
         role: "user"
       });
+      isNewUser = true;
+    } else if (user.name === "Customer" || !user.email) {
+      // Agar purana user hai par profile complete nahi ki thi
+      isNewUser = true;
     }
 
     return NextResponse.json({ 
@@ -48,7 +53,8 @@ export async function POST(req: Request) {
             name: user.name,
             role: user.role,
             avatar: user.avatar?.url || ""
-          }
+          },
+          isNewUser: isNewUser // 👈 Ye frontend ko batayega ki profile complete karni hai
         } 
     });
 

@@ -23,15 +23,19 @@ export async function POST(req: Request) {
     }, 5 * 60 * 1000); // 5 minutes expiry
 
     // 3. Send SMS via SMS Gateway Hub (JSON POST API for DLT Compliance)
-    const apiKey = "Bw2oikFbF06tAoEmZDMHZA"; // Client's API Key
-    const senderId = "COSMOX"; // Approved Sender ID
+    const apiKey = "Bw2oikFbF06tAoEmZDMHZA"; 
     
-    // ⚠️ WARNING: CLIENT KE PANEL SE YE 3 CHEEZEIN DEKH KAR EXACT DAALNA ⚠️
-    const entityId = "YAHAN_ENTITY_ID_DAALO";       // Example: "130115..." (DLT Principal Entity ID)
-    const templateId = "YAHAN_TEMPLATE_ID_DAALO";   // Example: "130716..." (19-digit DLT Template ID)
+    // ✅ FIX 1: Correct Sender ID
+    const senderId = "COSXCC"; 
     
-    // Panel me jo exact message hai wahi yahan daalna. {#var#} ki jagah ${otp} lagana.
-    const messageText = `Your OTP for Cosmopolitan Xccessories login is ${otp}. Do not share this with anyone.`; 
+    // ✅ FIX 2: Correct DLT Entity ID
+    const entityId = "1701178573811564521"; 
+    
+    // ✅ FIX 3: Correct DLT Template ID
+    const templateId = "1777178575974446829"; 
+    
+    // ✅ FIX 4: Exact Approved Message Text (Replacing {#var#} with ${otp})
+    const messageText = `Dear Customer, your One-Time Password (OTP) for logging into your Cosmopolitan Xccessories account is ${otp}. This OTP is valid for 10 minutes. Please do not share it with anyone.`; 
 
     // Official JSON format
     const requestBody = {
@@ -62,7 +66,7 @@ export async function POST(req: Request) {
     });
 
     const data = await response.json();
-    console.log("SMS API Response:", data); // Check your VS Code terminal to see success or error
+    console.log("SMS API Response:", data); // Terminal check
 
     // 000 is success code for SMS Gateway Hub
     if (data.ErrorCode === "000" || data.ErrorMessage === "Success") {

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/databaseConnection';
 import UserModel from '@/models/User.model';
 import OtpModel from '@/models/Otp.model'; 
+import jwt from 'jsonwebtoken'; // 👈 Naya Import: Token banane ke liye
+import { cookies } from 'next/headers'; // 👈 Naya Import: Cookie set karne ke liye
 
 export async function POST(req: Request) {
   try {
@@ -38,6 +40,26 @@ export async function POST(req: Request) {
     } else if (user.name === "Customer" || !user.email) {
       isNewUser = true;
     }
+
+    // ==========================================
+    // 🚀 NAYA CODE: TOKEN GENERATE AUR COOKIE SET KARNA
+    // ==========================================
+    
+    // Yahan apni .env file ka JWT secret daalna, agar alag naam se ho toh change kar lena
+    const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'default_secret_key';
+    
+    // Token generate kar rahe hain (7 din ke liye valid)
+    const token = jwt.sign({ id: user._id }, secret, { expiresIn: '7d' });
+
+    // Browser mein cookie set kar rahe hain taaki Middleware usko pehchaan le
+    cookies().set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: '/',
+    });
+    // ==========================================
 
     return NextResponse.json({ 
         success: true, 

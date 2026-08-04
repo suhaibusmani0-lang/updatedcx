@@ -46,7 +46,11 @@ export default function SignInPopup() {
   const [error, setError] = useState('');
 
   const headerText = (() => {
-    if (isNewUserStep) return 'Complete your profile details'; // Naye user ke liye header
+    if (isNewUserStep) return 'Complete your profile details'; 
+    // Photo ke hisaab se Mobile header text
+    if (step === 'credentials' && loginMethod === 'mobile' && mobileStep === 'phone') {
+      return 'Enter Mobile Number & Accept T&C to Continue';
+    }
     switch (step) {
       case 'credentials':
         return 'Sign in to continue to your account';
@@ -519,16 +523,29 @@ export default function SignInPopup() {
                 <form key="mobile-login-form" onSubmit={mobileStep === 'phone' ? handleSendMobileOtp : handleVerifyMobileOtp}>
                   {mobileStep === 'phone' ? (
                     <>
-                      <input
-                        value={mobilePhone}
-                        onChange={(e) => setMobilePhone(e.target.value)}
-                        type="tel"
-                        placeholder="Mobile number"
-                        required
-                        style={inputStyle}
-                      />
+                      {/* === PHOTO WALA +91 FLOATING LABEL BOX === */}
+                      <div style={{ position: 'relative', marginTop: '16px', marginBottom: '16px' }}>
+                        <label style={{ position: 'absolute', top: '-10px', left: '12px', background: '#fff', padding: '0 4px', fontSize: '12px', color: '#555' }}>
+                          Mobile *
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: '6px', padding: '10px 12px', boxSizing: 'border-box' }}>
+                          <span style={{ color: '#333', marginRight: '10px', borderRight: '1px solid #ddd', paddingRight: '10px', fontWeight: '500', fontSize: '15px' }}>
+                            +91
+                          </span>
+                          <input
+                            value={mobilePhone}
+                            // Sirf numbers accept karega aur maximum 10 digits
+                            onChange={(e) => setMobilePhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                            type="tel"
+                            placeholder="81234 56789"
+                            required
+                            style={{ border: 'none', outline: 'none', width: '100%', fontSize: '15px', background: 'transparent', padding: 0 }}
+                          />
+                        </div>
+                      </div>
+                      {/* === END OF BOX === */}
                       
-                      {/* 7. CHANGE: Naya T&C Checkbox Add Kiya Hai (Minimal style jo fit ho jaye) */}
+                      {/* 7. CHANGE: T&C Checkbox */}
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '14px', fontSize: '13px', color: '#555' }}>
                         <input
                           type="checkbox"
@@ -547,7 +564,7 @@ export default function SignInPopup() {
                         style={primaryBtnStyle}
                         disabled={mobileLoading || !isTcAccepted}
                       >
-                        {mobileLoading ? 'Sending OTP...' : 'Send OTP'}
+                        {mobileLoading ? 'SENDING...' : 'GET OTP'}
                       </button>
                       {mobileError && <div style={{color:'red', marginTop:8}}>{mobileError}</div>}
                     </>
@@ -566,7 +583,7 @@ export default function SignInPopup() {
                         style={primaryBtnStyle}
                         disabled={mobileLoading}
                       >
-                        {mobileLoading ? 'Verifying...' : 'Verify OTP'}
+                        {mobileLoading ? 'Verifying...' : 'VERIFY OTP'}
                       </button>
                       <button
                         type="button"

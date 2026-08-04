@@ -35,6 +35,11 @@ const LoginPage = () => {
   const router = useRouter();
   const callback = searchParams.get("callback");
 
+  // 🚀 NAYA REDIRECT FIX: Ye code galti se is page par aane wale user ko turant naye popup par bhej dega
+  useEffect(() => {
+    router.replace("/?showLogin=true");
+  }, [router]);
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => res.json())

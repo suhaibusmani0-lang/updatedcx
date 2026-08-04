@@ -1,67 +1,65 @@
-import { connectDB } from "@/lib/databaseConnection";
-import OtpModel from "@/models/Otp.model";
-import UserModel from "@/models/User.model";
-import { signToken, setSessionCookie } from "@/lib/auth";
+import { NextResponse } from 'next/server';
+import { connectDB } from '@/lib/databaseConnection';
+import UserModel from '@/models/User.model';
+import OtpModel from '@/models/Otp.model'; // Database model import kiya hai
 
-function jsonResponse(status, message, data = null) {
-  return Response.json({ ok: status < 400, message, data }, { status });
-}
-
-export async function POST(request) {
+export async function POST(req: Request) {
   try {
-    await connectDB();
+    await connectDB(); 
 
-    const { email, otp } = await request.json();
+    const { mobile, otp } = await req.json();
 
-    if (!email || !otp) {
-      return jsonResponse(400, "Email and OTP are required");
+    if (!mobile || !otp) {
+      return NextResponse.json({ success: false, message: 'Mobile and OTP are required' }, { status: 400 });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
+    const identifier = `${mobile}@mobile.com`; // Wahi format jo send karte waqt use kiya tha
 
-    const record = await OtpModel.findOne({
-      email: normalizedEmail,
-      otp,
-      expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+    // 1. Check OTP from Database
+    const otpRecord = await OtpModel.findOne({ email: identifier, otp: otp });
 
-    if (!record) {
-      return jsonResponse(400, "Invalid or expired OTP");
+    if (!otpRecord) {
+      return NextResponse.json({ success: false, message: 'Invalid or Expired OTP' }, { status: 400 });
     }
 
-    // Delete used OTPs
-    await OtpModel.deleteMany({ email: normalizedEmail });
+    // 2. OTP verified successfully, delete it from DB so it can't be reused
+    await OtpModel.deleteMany({ email: identifier });
 
-    // Fetch user data for JWT payload
-    const user = await UserModel.findOne({ email: normalizedEmail }).select("name email role avatar isEmailVerified");
-
+    // 3. User check and creation
+    let user = await UserModel.findOne({ phone: mobile });
+    let isNewUser = false;
+    
     if (!user) {
-      return jsonResponse(404, "User not found");
+      // Create a new user if not found
+      user = await UserModel.create({ 
+        phone: mobile, 
+        name: "Customer", // Default name, will be updated via profile form
+        authProvider: "mobile", 
+        role: "user"
+      });
+      isNewUser = true;
+    } else if (user.name === "Customer" || !user.email) {
+      // Existing user but profile is incomplete
+      isNewUser = true;
     }
 
-    // Sign JWT token
-    const token = await signToken({
-      userId: user._id.toString(),
-      email: user.email,
-      name: user.name,
-      role: user.role,
+    return NextResponse.json({ 
+        success: true, 
+        message: 'Logged in successfully',
+        data: { 
+          user: {
+            id: user._id.toString(),
+            phone: user.phone,
+            name: user.name,
+            role: user.role,
+            avatar: user.avatar?.url || ""
+          },
+          isNewUser: isNewUser // Tells frontend to show Name/Email form
+        } 
     });
 
-    // Set httpOnly cookie
-    await setSessionCookie(token);
-
-    return jsonResponse(200, "OTP verified successfully", {
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        isEmailVerified: user.isEmailVerified,
-      },
-    });
-  } catch (error) {
-    console.error("OTP verification error:", error);
-    return jsonResponse(500, error instanceof Error ? error.message : "Internal Server Error");
+  } catch (error: any) {
+    console.error("Verify OTP Error:", error);
+    return NextResponse.json({ success: false, message: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

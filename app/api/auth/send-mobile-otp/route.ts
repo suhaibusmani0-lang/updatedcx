@@ -1,12 +1,10 @@
-// app/api/auth/send-mobile-otp/route.ts
 import { NextResponse } from 'next/server';
-
-// TypeScript fix for global variable
-const globalAny: any = global;
-globalAny.otpStore = globalAny.otpStore || new Map();
+import { connectDB } from '@/lib/databaseConnection';
+import OtpModel from '@/models/Otp.model'; // Database model import kiya hai
 
 export async function POST(req: Request) {
   try {
+    await connectDB();
     const { mobile } = await req.json();
 
     if (!mobile || mobile.length !== 10) {
@@ -16,28 +14,25 @@ export async function POST(req: Request) {
     // 1. Generate a random 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // 2. Save OTP in memory (valid for 5 mins)
-    globalAny.otpStore.set(mobile, otp);
-    setTimeout(() => {
-      globalAny.otpStore.delete(mobile);
-    }, 5 * 60 * 1000); // 5 minutes expiry
+    // 2. Save OTP to Database (Vercel Safe)
+    // Hack: Added "@mobile.com" so that if OtpModel strictly requires an email format, it won't crash
+    const identifier = `${mobile}@mobile.com`;
+    
+    await OtpModel.deleteMany({ email: identifier }); // Purane OTP delete
+    const otpRecord = await OtpModel.create({ email: identifier, otp: otp }); // Naya OTP save
 
-    // 3. Send SMS via SMS Gateway Hub (JSON POST API for DLT Compliance)
+    if (!otpRecord) {
+      return NextResponse.json({ success: false, message: 'Database error: Failed to save OTP' }, { status: 500 });
+    }
+
+    // 3. Send SMS via SMS Gateway Hub
     const apiKey = "Bw2oikFbF06tAoEmZDMHZA"; 
-    
-    // ✅ FIX 1: Correct Sender ID
     const senderId = "COSXCC"; 
-    
-    // ✅ FIX 2: Correct DLT Entity ID
     const entityId = "1701178573811564521"; 
-    
-    // ✅ FIX 3: Correct DLT Template ID
     const templateId = "1777178575974446829"; 
     
-    // ✅ FIX 4: Exact Approved Message Text (Replacing {#var#} with ${otp})
     const messageText = `Dear Customer, your One-Time Password (OTP) for logging into your Cosmopolitan Xccessories account is ${otp}. This OTP is valid for 10 minutes. Please do not share it with anyone.`; 
 
-    // Official JSON format
     const requestBody = {
       "Account": {
         "APIkey": apiKey,
@@ -52,23 +47,20 @@ export async function POST(req: Request) {
         {
           "Text": messageText,
           "DLTTemplateId": templateId,
-          "Number": `91${mobile}` // API format needs 91 before number
+          "Number": `91${mobile}` 
         }
       ]
     };
 
     const response = await fetch('https://www.smsgatewayhub.com/api/mt/SendSMS?', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
-    console.log("SMS API Response:", data); // Terminal check
+    console.log("SMS API Response:", data);
 
-    // 000 is success code for SMS Gateway Hub
     if (data.ErrorCode === "000" || data.ErrorMessage === "Success") {
       return NextResponse.json({ success: true, message: 'OTP Sent Successfully' });
     } else {

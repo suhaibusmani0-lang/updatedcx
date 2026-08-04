@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/databaseConnection';
-import OtpModel from '@/models/Otp.model'; // Database model import kiya hai
+import OtpModel from '@/models/Otp.model'; 
 
-export async function POST(req: Request) {
+export async function POST(req) { // 👈 Yahan se ': Request' hata diya hai
   try {
     await connectDB();
     const { mobile } = await req.json();
@@ -15,7 +15,6 @@ export async function POST(req: Request) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     // 2. Save OTP to Database (Vercel Safe)
-    // Hack: Added "@mobile.com" so that if OtpModel strictly requires an email format, it won't crash
     const identifier = `${mobile}@mobile.com`;
     
     await OtpModel.deleteMany({ email: identifier }); // Purane OTP delete
@@ -66,7 +65,7 @@ export async function POST(req: Request) {
     } else {
       return NextResponse.json({ success: false, message: data.ErrorMessage || 'Failed to send SMS' }, { status: 400 });
     }
-  } catch (error) {
+  } catch (error) { // 👈 Yahan bhi dhyan rakha hai ki koi TS type na ho
     console.error("SMS Sending Error:", error);
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
   }

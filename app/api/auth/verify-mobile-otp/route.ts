@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/databaseConnection';
 import UserModel from '@/models/User.model';
 import OtpModel from '@/models/Otp.model'; 
-import jwt from 'jsonwebtoken'; // 👈 Naya Import: Token banane ke liye
-import { cookies } from 'next/headers'; // 👈 Naya Import: Cookie set karne ke liye
+import jwt from 'jsonwebtoken'; 
+import { cookies } from 'next/headers'; 
 
 export async function POST(req: Request) {
   try {
@@ -42,17 +42,14 @@ export async function POST(req: Request) {
     }
 
     // ==========================================
-    // 🚀 NAYA CODE: TOKEN GENERATE AUR COOKIE SET KARNA
+    // 🚀 FIXED: Next.js 15+ ke liye await add kar diya
     // ==========================================
-    
-    // Yahan apni .env file ka JWT secret daalna, agar alag naam se ho toh change kar lena
     const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'default_secret_key';
-    
-    // Token generate kar rahe hain (7 din ke liye valid)
     const token = jwt.sign({ id: user._id }, secret, { expiresIn: '7d' });
 
-    // Browser mein cookie set kar rahe hain taaki Middleware usko pehchaan le
-    cookies().set('token', token, {
+    // Yahan await lagana zaroori hai naye Next.js mein
+    const cookieStore = await cookies();
+    cookieStore.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',

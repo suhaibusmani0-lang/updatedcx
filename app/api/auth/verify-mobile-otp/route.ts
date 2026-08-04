@@ -42,14 +42,19 @@ export async function POST(req: Request) {
     }
 
     // ==========================================
-    // 🚀 FIXED: Next.js 15+ ke liye await add kar diya
+    // 🚀 FIXED: Cookie ka naam 'session' kar diya aur role add kiya
     // ==========================================
-    const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'default_secret_key';
-    const token = jwt.sign({ id: user._id }, secret, { expiresIn: '7d' });
+    // Secret string bilkul tumhare middleware jaisi rakhi hai
+    const secret = process.env.JWT_SECRET || "fallback-dev-secret-change-in-production";
+    
+    // Token mein id ke sath role bhi bhej rahe hain
+    const token = jwt.sign({ id: user._id, role: user.role }, secret, { expiresIn: '7d' });
 
-    // Yahan await lagana zaroori hai naye Next.js mein
+    // Await lagana zaroori hai Next.js 15+ ke liye
     const cookieStore = await cookies();
-    cookieStore.set('token', token, {
+    
+    // Yahan cookie ka naam 'session' kar diya hai
+    cookieStore.set('session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',

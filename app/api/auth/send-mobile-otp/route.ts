@@ -2,29 +2,26 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/databaseConnection';
 import OtpModel from '@/models/Otp.model'; 
 
-export async function POST(req) { // 👈 Yahan se ': Request' hata diya hai
+export async function POST(req: Request) {
   try {
     await connectDB();
-    const { mobile } = await req.json();
+    const body = await req.json();
+    const mobile = body?.mobile;
 
     if (!mobile || mobile.length !== 10) {
       return NextResponse.json({ success: false, message: 'Please enter a valid 10-digit mobile number' }, { status: 400 });
     }
 
-    // 1. Generate a random 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // 2. Save OTP to Database (Vercel Safe)
     const identifier = `${mobile}@mobile.com`;
     
-    await OtpModel.deleteMany({ email: identifier }); // Purane OTP delete
-    const otpRecord = await OtpModel.create({ email: identifier, otp: otp }); // Naya OTP save
+    await OtpModel.deleteMany({ email: identifier });
+    const otpRecord = await OtpModel.create({ email: identifier, otp: otp });
 
     if (!otpRecord) {
       return NextResponse.json({ success: false, message: 'Database error: Failed to save OTP' }, { status: 500 });
     }
 
-    // 3. Send SMS via SMS Gateway Hub
     const apiKey = "Bw2oikFbF06tAoEmZDMHZA"; 
     const senderId = "COSXCC"; 
     const entityId = "1701178573811564521"; 
@@ -65,7 +62,7 @@ export async function POST(req) { // 👈 Yahan se ': Request' hata diya hai
     } else {
       return NextResponse.json({ success: false, message: data.ErrorMessage || 'Failed to send SMS' }, { status: 400 });
     }
-  } catch (error) { // 👈 Yahan bhi dhyan rakha hai ki koi TS type na ho
+  } catch (error: any) {
     console.error("SMS Sending Error:", error);
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
   }

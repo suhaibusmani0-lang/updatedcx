@@ -71,14 +71,15 @@ async function getProducts({
 // Loading skeleton component
 function ProductGridSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+    // 🔥 EDITORIAL THEME: Sharp corners (rounded-none) aur 4px gap lagaya hai
+    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[4px]">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="animate-pulse">
-          <div className="aspect-square bg-[#F1EBE1] rounded-lg sm:rounded-xl" />
-          <div className="mt-2 sm:mt-3 space-y-2">
-            <div className="h-3 bg-[#F1EBE1] rounded w-2/3" />
-            <div className="h-4 bg-[#F1EBE1] rounded w-3/4" />
-            <div className="h-3 bg-[#F1EBE1] rounded w-1/2" />
+          <div className="aspect-square bg-[#EAE8E3] rounded-none" />
+          <div className="mt-3 sm:mt-4 space-y-2 px-1">
+            <div className="h-3 bg-[#EAE8E3] rounded-none w-1/3" />
+            <div className="h-4 bg-[#EAE8E3] rounded-none w-3/4" />
+            <div className="h-3 bg-[#EAE8E3] rounded-none w-1/4" />
           </div>
         </div>
       ))}
@@ -108,13 +109,14 @@ export default async function ProductGrid({
   const products = await getProducts({ limit, isNewArrival, category });
 
   return (
-    <section className="bg-[#FAF7F2] py-12 sm:py-16 md:py-20 lg:py-24 border-t border-[#E3D9C9]">
+    // 🔥 VERTICAL GAP REDUCED: py-12 se py-6 kar diya taaki gap lamba na dikhe
+    <section className="bg-[#FAF7F2] py-6 lg:py-8 border-t border-[#E3D9C9]">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10">
 
         {/* Header row */}
         <div className="flex items-end justify-between mb-7 sm:mb-10">
           <div>
-            <p className="text-[10px] sm:text-xs tracking-[0.3em] uppercase text-[#8B6F52] mb-1 sm:mb-2">
+            <p className="text-[10px] sm:text-xs tracking-[0.3em] uppercase text-[#8B6F52] font-bold mb-1 sm:mb-2">
               {subtitle}
             </p>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif text-[#1A1A1A]">
@@ -124,7 +126,7 @@ export default async function ProductGrid({
           {viewAllLink && (
             <a
               href={viewAllLink}
-              className="hidden sm:inline text-[11px] tracking-widest uppercase text-[#1A1A1A] border-b border-[#1A1A1A] pb-0.5 hover:text-[#e2e2e2] hover:border-[#e2e2e2] transition-colors whitespace-nowrap"
+              className="hidden sm:inline text-[11px] font-bold tracking-widest uppercase text-[#1A1A1A] border-b border-[#1A1A1A] pb-0.5 hover:text-[#8B6F52] hover:border-[#8B6F52] transition-colors whitespace-nowrap"
             >
               View All
             </a>
@@ -134,7 +136,8 @@ export default async function ProductGrid({
         {/* Products Grid with Suspense for loading */}
         <Suspense fallback={<ProductGridSkeleton count={limit} />}>
           {products.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+            // 🔥 EDITORIAL THEME: Products ke beech 4px ka gap
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[4px]">
               {products.map((product: Product) => (
                 <ProductCard key={product._id} product={product} />
               ))}
@@ -146,10 +149,10 @@ export default async function ProductGrid({
 
         {/* Mobile view all */}
         {viewAllLink && products.length > 0 && (
-          <div className="mt-7 text-center sm:hidden">
+          <div className="mt-8 text-center sm:hidden">
             <a 
               href={viewAllLink} 
-              className="text-xs tracking-widest uppercase text-[#1A1A1A] border-b border-[#1A1A1A] pb-0.5 hover:text-[#e2e2e2] hover:border-[#e2e2e2] transition-colors"
+              className="text-[11px] font-bold tracking-widest uppercase text-[#1A1A1A] border-b border-[#1A1A1A] pb-0.5 hover:text-[#8B6F52] hover:border-[#8B6F52] transition-colors"
             >
               View All
             </a>

@@ -39,7 +39,7 @@ export default function ProductGallery({ images = [], name = "Product", badge }:
 
   if (!images || images.length === 0) {
     return (
-      <div className="aspect-square w-full bg-gray-100 flex items-center justify-center text-gray-400">
+      <div className="aspect-square w-full bg-[#F1EBE1] flex items-center justify-center text-[#8B6F52] rounded-none">
         No image available
       </div>
     );
@@ -113,11 +113,11 @@ export default function ProductGallery({ images = [], name = "Product", badge }:
 
   return (
     <div className="relative flex flex-col">
-      {/* 1. Main Image Area */}
+      {/* 1. Main Image Area - Sharp Edges and Theme Background */}
       <div
         ref={containerRef}
         onClick={() => setIsLightboxOpen(true)} 
-        className="relative aspect-square w-full bg-[#F5F5F5] overflow-visible cursor-zoom-in group flex items-center justify-center mb-4"
+        className="relative aspect-square w-full bg-[#F1EBE1] overflow-visible cursor-zoom-in group flex items-center justify-center mb-[4px] rounded-none border border-transparent hover:border-[#D4C4B0] transition-colors"
         onMouseEnter={() => setIsZooming(true)}
         onMouseLeave={() => setIsZooming(false)}
         onMouseMove={handleMouseMove}
@@ -135,19 +135,18 @@ export default function ProductGallery({ images = [], name = "Product", badge }:
           fetchPriority="high"
         />
 
-        
         {images.length > 1 && (
           <>
             <button
               onClick={prevImage}
-              className="absolute left-2 md:left-4 z-20 p-1.5 md:p-2 bg-white/80 hover:bg-white rounded-full shadow-md text-gray-800 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100"
+              className="absolute left-[4px] md:left-[8px] z-20 p-2 md:p-2.5 bg-white/90 hover:bg-white rounded-none shadow-sm text-[#1A1A1A] transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 border border-[#E3D9C9]"
               aria-label="Previous image"
             >
               <ChevronLeft size={20} />
             </button>
             <button
               onClick={nextImage}
-              className="absolute right-2 md:right-4 z-20 p-1.5 md:p-2 bg-white/80 hover:bg-white rounded-full shadow-md text-gray-800 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100"
+              className="absolute right-[4px] md:right-[8px] z-20 p-2 md:p-2.5 bg-white/90 hover:bg-white rounded-none shadow-sm text-[#1A1A1A] transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 border border-[#E3D9C9]"
               aria-label="Next image"
             >
               <ChevronRight size={20} />
@@ -155,21 +154,22 @@ export default function ProductGallery({ images = [], name = "Product", badge }:
           </>
         )}
 
+        {/* Sharp Badge matching 4px offset */}
         {badge && (
           <span 
-            className={`absolute top-4 left-4 uppercase rounded z-10 
+            className={`absolute top-[4px] left-[4px] uppercase rounded-none z-10 
             ${badge === "Sale" 
-              ? "bg-[#e2e2e2] text-[#1A1A1A] text-xs px-3 py-1.5 font-semibold tracking-widest" 
-              : "bg-[#1A1A1A] text-white text-xs font-bold px-3 py-1.5 shadow-sm tracking-wider"}`}
+              ? "bg-[#C1121F] text-white text-[10px] px-2.5 py-1 font-bold tracking-widest" 
+              : "bg-[#1A1A1A] text-white text-[10px] font-bold px-3 py-1 shadow-sm tracking-wider"}`}
           >
             {badge}
           </span>
         )}
 
-        {/* 2. The Magnifying Lens Box */}
+        {/* 2. The Magnifying Lens Box - Sharp Edges */}
         {isZooming && !isLightboxOpen && (
           <div
-            className="hidden lg:block absolute bg-white/20 border border-black/30 pointer-events-none transition-none shadow-[0_0_0_9999px_rgba(255,255,255,0.4)]"
+            className="hidden lg:block absolute bg-white/10 border border-white/60 pointer-events-none transition-none shadow-[0_0_0_9999px_rgba(26,26,26,0.3)] rounded-none"
             style={{
               width: "150px",
               height: "150px",
@@ -180,12 +180,12 @@ export default function ProductGallery({ images = [], name = "Product", badge }:
           />
         )}
 
-        {/* 3. The Side Zoom Projection */}
+        {/* 3. The Side Zoom Projection - Sharp Border */}
         {isZooming && !isLightboxOpen && (
           <div
-            className="hidden lg:block absolute top-0 w-[95%] h-full bg-white border border-gray-300 shadow-2xl z-50 pointer-events-none"
+            className="hidden lg:block absolute top-0 w-[95%] h-full bg-white border border-[#E3D9C9] shadow-xl z-50 pointer-events-none rounded-none"
             style={{
-              left: "calc(100% + 20px)",
+              left: "calc(100% + 12px)",
               backgroundImage: `url(${currentImage})`,
               backgroundPosition: zoomStyle.backgroundPosition,
               backgroundSize: "250%",
@@ -195,11 +195,11 @@ export default function ProductGallery({ images = [], name = "Product", badge }:
         )}
       </div>
 
-      {/* 4. Thumbnail Carousel */}
-      <div className="relative flex items-center justify-center max-w-2xl mx-auto w-full px-8">
+      {/* 4. Thumbnail Carousel - 4px Gaps and Sharp Corners */}
+      <div className="relative flex items-center justify-center w-full px-8">
         <button
           onClick={() => scrollThumbnails("left")}
-          className="absolute left-0 z-10 flex h-8 w-8 items-center justify-center bg-white border border-gray-300 text-gray-600 hover:text-black hover:border-black transition-colors"
+          className="absolute left-0 z-10 flex h-8 w-8 items-center justify-center bg-white border border-[#E3D9C9] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white hover:border-[#1A1A1A] transition-colors rounded-none"
           aria-label="Scroll left"
         >
           <ChevronLeft size={18} />
@@ -207,24 +207,24 @@ export default function ProductGallery({ images = [], name = "Product", badge }:
 
         <div 
           ref={scrollContainerRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth py-2 px-1"
+          className="flex gap-[4px] overflow-x-auto scrollbar-hide scroll-smooth py-1"
           style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}
         >
           {images.map((img, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx)}
-              className={`relative h-20 w-20 flex-shrink-0 bg-white border transition-all ${
+              className={`relative h-20 w-20 flex-shrink-0 bg-[#F1EBE1] rounded-none transition-all border ${
                 currentIndex === idx
-                  ? "border-black shadow-sm"
-                  : "border-gray-200 opacity-60 hover:opacity-100"
+                  ? "border-[#1A1A1A]"
+                  : "border-transparent opacity-60 hover:opacity-100 hover:border-[#D4C4B0]"
               }`}
             >
               <Image
                 src={img?.url || img}
                 alt={`${name} thumbnail ${idx + 1}`}
                 fill
-                className="object-cover p-1" 
+                className="object-cover" 
               />
             </button>
           ))}
@@ -232,20 +232,20 @@ export default function ProductGallery({ images = [], name = "Product", badge }:
 
         <button
           onClick={() => scrollThumbnails("right")}
-          className="absolute right-0 z-10 flex h-8 w-8 items-center justify-center bg-white border border-gray-300 text-gray-600 hover:text-black hover:border-black transition-colors"
+          className="absolute right-0 z-10 flex h-8 w-8 items-center justify-center bg-white border border-[#E3D9C9] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white hover:border-[#1A1A1A] transition-colors rounded-none"
           aria-label="Scroll right"
         >
           <ChevronRight size={18} />
         </button>
       </div>
 
-      {/* 5. The Lightbox / Popup Modal */}
+      {/* 5. The Lightbox / Popup Modal - Sharp theme elements */}
       {isLightboxOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-sm">
           
           <button
             onClick={() => setIsLightboxOpen(false)}
-            className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors z-50 p-2"
+            className="absolute top-6 right-6 text-white/60 hover:text-white transition-colors z-50 p-2 rounded-none"
             aria-label="Close popup"
           >
             <X size={32} />
@@ -253,7 +253,7 @@ export default function ProductGallery({ images = [], name = "Product", badge }:
 
           <button
             onClick={prevImage}
-            className="absolute left-4 md:left-10 text-white/70 hover:text-white transition-colors z-50 p-2"
+            className="absolute left-4 md:left-10 text-white/60 hover:text-white transition-colors z-50 p-2 rounded-none"
             aria-label="Previous image"
           >
             <ChevronLeft size={40} />
@@ -273,13 +273,13 @@ export default function ProductGallery({ images = [], name = "Product", badge }:
 
           <button
             onClick={nextImage}
-            className="absolute right-4 md:right-10 text-white/70 hover:text-white transition-colors z-50 p-2"
+            className="absolute right-4 md:right-10 text-white/60 hover:text-white transition-colors z-50 p-2 rounded-none"
             aria-label="Next image"
           >
             <ChevronRight size={40} />
           </button>
           
-          <div className="absolute bottom-6 text-white/50 text-sm tracking-widest">
+          <div className="absolute bottom-6 text-white/50 text-xs font-bold tracking-widest uppercase">
             {currentIndex + 1} / {images.length}
           </div>
         </div>

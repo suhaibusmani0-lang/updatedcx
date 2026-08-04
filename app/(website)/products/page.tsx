@@ -57,7 +57,7 @@ async function getProducts(searchParams: SearchParams) {
 
         if (categorySlug) {
           const categoryDoc = await CategoryModel.findOne({
-            slug: categorySlug.toLowerCase(), // Lowercase kiya for safety
+            slug: categorySlug.toLowerCase(),
             isActive: true,
             isDeleted: false,
           }).lean();
@@ -102,9 +102,8 @@ async function getProducts(searchParams: SearchParams) {
         throw new Error("Failed to fetch products data");
       }
     },
-    // Unique Cache Key based on filters/search parameters
     [`all-products-${JSON.stringify(searchParams)}`],
-    { revalidate: 3600 } // 1 ghanta cache rahega
+    { revalidate: 3600 }
   );
 
   try {
@@ -129,7 +128,7 @@ export default async function ProductsPage({
 
   if (!data) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center font-serif text-[#1A1A1A]">
         Products not found
       </div>
     );
@@ -140,13 +139,12 @@ export default async function ProductsPage({
   return (
     <div className="min-h-screen bg-[#FAF7F2]">
       
-      
       <div className="w-full bg-[#AEAA9B] bg-opacity-30 py-10 md:py-14 px-4 sm:px-6 md:px-10">
         <div className="max-w-7xl mx-auto flex flex-col items-center justify-center text-center relative z-10">
-          <h1 className="text-2xl md:text-3xl font-bold mb-4 text-[#1A1A1A]">
+          <h1 className="text-2xl md:text-3xl font-serif font-bold mb-4 text-[#1A1A1A]">
             All Products
           </h1>
-          <p className="text-[#1A1A1A]/80 text-base md:text-lg leading-relaxed w-full text-center">
+          <p className="text-[#1A1A1A]/80 text-base md:text-lg leading-relaxed w-full text-center font-light">
             Browse our complete collection
           </p>
         </div>
@@ -166,24 +164,24 @@ export default async function ProductsPage({
           <div className="flex-1">
             {/* Toolbar (Desktop) */}
             <div className="hidden lg:flex flex-col sm:flex-row justify-between gap-4 mb-6">
-              <p className="text-sm text-[#1A1A1A]/60">
+              <p className="text-sm text-[#1A1A1A]/60 font-medium">
                 Showing {products.length} of {total} products
               </p>
 
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <button className="p-2 bg-[#AEAA9B] text-white rounded-lg">
+                  <button className="p-2 bg-[#AEAA9B] text-white rounded-none transition-colors hover:bg-[#8B6F52]">
                     <Grid size={18} />
                   </button>
 
-                  <button className="p-2 bg-white rounded-lg">
+                  <button className="p-2 bg-white text-[#1A1A1A] border border-[#E3D9C9] rounded-none transition-colors hover:bg-[#FAF7F2]">
                     <List size={18} />
                   </button>
                 </div>
 
                 <select
                   defaultValue={sort}
-                  className="px-4 py-2 border rounded-lg bg-white"
+                  className="px-4 py-2 border border-[#E3D9C9] rounded-none bg-white text-sm font-medium focus:outline-none focus:border-[#1A1A1A]"
                 >
                   <option value="newest">Newest First</option>
                   <option value="price-low">Price Low to High</option>
@@ -196,62 +194,71 @@ export default async function ProductsPage({
             {/* Grid */}
             {products?.length > 0 ? (
               <>
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                {/* 🔥 EDITORIAL THEME: Exact 4px gap and sharp grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-[4px]">
                   {products.map((product: any) => (
                     <Link
                       key={product._id}
                       href={`/product/${product.slug}`}
-                      className="group"
+                      className="group flex flex-col h-full bg-white relative"
                     >
-                      <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition">
-                        <div className="aspect-square relative">
-                          {product.images?.[0]?.url ? (
-                            <Image
-                              src={product.images[0].url}
-                              alt={product.name}
-                              fill
-                              className="object-cover group-hover:scale-105 transition"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                              No Image
-                            </div>
-                          )}
-                          
-                          
-                          {product.badge && (
-                            <div className="absolute top-3 left-3 bg-[#1A1A1A] text-white text-[10px] font-bold px-2.5 py-1 uppercase rounded shadow-sm tracking-wider z-10">
-                              {product.badge}
-                            </div>
-                          )}
-                          
-                          
-                          {product.salePrice && (
-                            <div className="absolute top-3 right-3 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full z-10">
-                              SALE
-                            </div>
-                          )}
-                        </div>
+                      <div className="relative overflow-hidden rounded-none bg-[#F1EBE1] w-full" style={{ aspectRatio: "1 / 1" }}>
+                        
+                        {/* 🔥 MAGIC: Inner White Border ONLY ON HOVER */}
+                        <div className="absolute inset-[4px] border border-white/60 z-20 pointer-events-none opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 z-10 pointer-events-none transition-colors duration-500" />
 
-                        <div className="p-4">
-                          <h3 className="font-medium line-clamp-2 mb-2">
-                            {product.name}
-                          </h3>
-
-                          <div className="flex gap-2 items-center">
-                            <span className="font-semibold text-[#AEAA9B]">
-                              ₹
-                              {(
-                                product.salePrice || product.price
-                              ).toLocaleString()}
+                        {product.images?.[0]?.url ? (
+                          <Image
+                            src={product.images[0].url}
+                            alt={product.name}
+                            fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            className="object-cover transition-transform duration-700 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-[#D4C4B0]">
+                            <span className="text-2xl text-[#8B6F52] font-semibold">
+                              {product.name.charAt(0).toUpperCase()}
                             </span>
-
-                            {product.salePrice && (
-                              <span className="text-sm text-gray-400 line-through">
-                                ₹{product.price.toLocaleString()}
-                              </span>
-                            )}
                           </div>
+                        )}
+                        
+                        {/* Sharp Badges matching exactly 4px offset */}
+                        {product.badge && (
+                          <div className="absolute top-[4px] left-[4px] bg-[#1A1A1A] text-white text-[10px] font-bold px-3 py-1 uppercase rounded-none shadow-sm tracking-wider z-30">
+                            {product.badge}
+                          </div>
+                        )}
+                        
+                        {product.salePrice && !product.badge && (
+                          <div className="absolute top-[4px] left-[4px] px-2.5 py-1 bg-[#C1121F] text-white text-[10px] tracking-widest uppercase font-bold rounded-none z-30">
+                            SALE
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Text Section - Sharp alignment */}
+                      <div className="flex flex-col flex-grow mt-3 px-[4px] pb-4">
+                        {product.category?.name && (
+                          <p className="text-[9px] sm:text-[10px] tracking-widest uppercase text-[#8B6F52] font-semibold mb-[4px]">
+                            {product.category.name}
+                          </p>
+                        )}
+                        <h3 className="text-sm sm:text-[15px] text-[#1A1A1A] font-serif leading-snug line-clamp-2">
+                          {product.name}
+                        </h3>
+
+                        <div className="flex items-center gap-[4px] sm:gap-[6px] mt-[4px] flex-wrap">
+                          <span className={`text-sm sm:text-base font-medium ${product.salePrice ? "text-[#C1121F]" : "text-[#1A1A1A]"}`}>
+                            ₹{(product.salePrice || product.price).toLocaleString()}
+                          </span>
+
+                          {product.salePrice && (
+                            <span className="text-[11px] sm:text-xs text-gray-500 line-through">
+                              ₹{product.price.toLocaleString()}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </Link>
@@ -260,7 +267,7 @@ export default async function ProductsPage({
 
                 {/* Pagination */}
                 {pages > 1 && (
-                  <div className="flex justify-center gap-2 mt-10">
+                  <div className="flex justify-center gap-[4px] mt-12">
                     {Array.from(
                       { length: Math.min(5, pages) },
                       (_, i) => i + 1
@@ -268,10 +275,10 @@ export default async function ProductsPage({
                       <Link
                         key={pageNum}
                         href={`/products?page=${pageNum}&sort=${sort}`}
-                        className={`px-4 py-2 rounded-lg ${
+                        className={`px-4 py-2 rounded-none text-sm font-bold tracking-widest transition-colors border ${
                           pageNum === page
-                            ? "bg-[#AEAA9B] text-white"
-                            : "bg-white border"
+                            ? "bg-[#1A1A1A] text-white border-[#1A1A1A]"
+                            : "bg-white text-[#1A1A1A] border-[#E3D9C9] hover:border-[#1A1A1A]"
                         }`}
                       >
                         {pageNum}
@@ -281,14 +288,13 @@ export default async function ProductsPage({
                 )}
               </>
             ) : (
-              <div className="bg-white rounded-2xl p-12 text-center">
+              <div className="bg-white rounded-none border border-[#E3D9C9] p-12 text-center text-[#1A1A1A] font-serif text-lg">
                 No Products Found
               </div>
             )}
           </div>
         </div>
 
-        
         <MobileToolbar 
           currentSort={sort} 
           filterNode={<ProductFilterSidebar basePath="/products" />} 

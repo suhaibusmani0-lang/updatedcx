@@ -22,29 +22,27 @@ interface Product {
 }
 
 export default function ProductCard({ product }: { product: Product }) {
-  // Existing States
   const [wished, setWished] = useState(false);
   const [added, setAdded] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Notify Me States
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [formData, setFormData] = useState({ name: "", contact: "" });
   
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+
   const dispatch = useDispatch();
   const auth = useSelector((state: RootState) => state.authStore?.auth);
 
-  // Check if product is in wishlist on mount or when auth changes
   useEffect(() => {
     const checkWishlistStatus = async () => {
       if (!auth) {
         setWished(false);
         return;
       }
-
       try {
         const res = await fetch(`/api/wishlist/check?productId=${product._id}`);
         if (res.ok) {
@@ -55,19 +53,37 @@ export default function ProductCard({ product }: { product: Product }) {
         console.error("Failed to check wishlist status:", error);
       }
     };
-
     checkWishlistStatus();
   }, [auth, product._id]);
+
+  useEffect(() => {
+    if (!product?.images || product.images.length <= 1) return;
+    let interval: NodeJS.Timeout;
+    const randomDelay = Math.floor(Math.random() * 2500);
+
+    const timeout = setTimeout(() => {
+      setCurrentImgIndex((prevIndex) => 
+        prevIndex === product.images.length - 1 ? 0 : prevIndex + 1
+      );
+      interval = setInterval(() => {
+        setCurrentImgIndex((prevIndex) => 
+          prevIndex === product.images.length - 1 ? 0 : prevIndex + 1
+        );
+      }, 3500);
+    }, randomDelay);
+
+    return () => {
+      clearTimeout(timeout);
+      if (interval) clearInterval(interval);
+    };
+  }, [product?.images]);
 
   const handleAddToCart = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
     if (product.stock === 0 || isAddingToCart) return;
-    
     setError(null);
     setIsAddingToCart(true);
-
     try {
       if (auth) {
         const res = await fetch("/api/cart", {
@@ -76,12 +92,10 @@ export default function ProductCard({ product }: { product: Product }) {
           body: JSON.stringify({ productId: product._id, qty: 1 }),
         });
         const data = await res.json().catch(() => ({}));
-
         if (!res.ok) {
           showToast("error", data.message || "Failed to add to cart");
           return;
         }
-
         if (data.data?.items) {
           dispatch(setCart(mapApiCartItems(data.data.items)));
         }
@@ -95,7 +109,6 @@ export default function ProductCard({ product }: { product: Product }) {
           image: product.images[0]?.url || "",
         }));
       }
-      
       setAdded(true);
       setTimeout(() => setAdded(false), 1500);
     } catch (error) {
@@ -110,39 +123,27 @@ export default function ProductCard({ product }: { product: Product }) {
   const toggleWishlist = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
     if (isTogglingWishlist) return;
-    
     if (!auth) {
       setError("Please login to add to wishlist");
       setTimeout(() => setError(null), 3000);
       return;
     }
-
     setError(null);
     setIsTogglingWishlist(true);
     const previousWished = wished;
     setWished(!wished);
-
     try {
       if (wished) {
-        const res = await fetch(`/api/wishlist?productId=${product._id}`, { 
-          method: "DELETE" 
-        });
-        
-        if (!res.ok) {
-          showToast("error", "Failed to remove from wishlist");
-        }
+        const res = await fetch(`/api/wishlist?productId=${product._id}`, { method: "DELETE" });
+        if (!res.ok) showToast("error", "Failed to remove from wishlist");
       } else {
         const res = await fetch("/api/wishlist", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId: product._id }),
         });
-        
-        if (!res.ok) {
-          showToast("error", "Failed to add to wishlist");
-        }
+        if (!res.ok) showToast("error", "Failed to add to wishlist");
       }
     } catch (error) {
       console.error("Error toggling wishlist:", error);
@@ -154,7 +155,6 @@ export default function ProductCard({ product }: { product: Product }) {
     }
   }, [auth, wished, product._id, isTogglingWishlist]);
 
-  // Combined Notify Request Function
   const submitNotifyRequest = async (userName: string, contactDetails: string) => {
     setNotifyLoading(true);
     try {
@@ -168,7 +168,6 @@ export default function ProductCard({ product }: { product: Product }) {
           contactDetails,
         }),
       });
-
       if (response.ok) {
         showToast("success", "Thank you! The admin has been notified.");
         setShowNotifyModal(false);
@@ -186,31 +185,46 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const formatPrice = (price: number) => `₹${price.toLocaleString()}`;
   
+  if (!product) return null;
+
   const displayPrice = product.salePrice || product.price;
   const hasSale = !!product.salePrice && product.salePrice < product.price;
   const isOutOfStock = product.stock === 0;
+  const productImages = product.images || [];
 
   return (
     <>
-      <Link href={`/product/${product.slug}`} className="group block relative">
+      {/* 🔥 CSS CONFLICT FIXED: Hata diya 'block' jo 'flex' ke sath clash kar raha tha, aur 'w-full' lagaya taaki card 100% width le */}
+      <Link href={`/product/${product.slug}`} className="group relative h-full flex flex-col w-full bg-white">
         {error && (
-          <div className="absolute top-0 left-0 right-0 z-10 bg-red-500 text-white text-xs p-2 rounded-t-lg text-center">
+          <div className="absolute top-0 left-0 right-0 z-10 bg-red-500 text-white text-xs p-2 text-center">
             {error}
           </div>
         )}
         
-        <div className="relative overflow-hidden rounded-lg sm:rounded-xl bg-[#F1EBE1] w-full" style={{ aspectRatio: "1 / 1" }}>
-          {product.images[0]?.url ? (
-            <div className="relative w-full h-full">
-              <Image
-                src={product.images[0].url}
-                alt={product.name}
-                fill
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-            </div>
+        <div className="relative overflow-hidden rounded-none bg-[#F1EBE1] w-full" style={{ aspectRatio: "1 / 1" }}>
+          
+          <div className="absolute inset-[4px] border border-white/60 z-20 pointer-events-none opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+          
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 z-10 pointer-events-none transition-colors duration-500" />
+
+          {productImages.length > 0 ? (
+            productImages.map((img, index) => (
+              <div
+                key={index}
+                className="absolute inset-0 w-full h-full transition-transform duration-1000 ease-in-out"
+                style={{ transform: `translateX(${(index - currentImgIndex) * 100}%)` }}
+              >
+                <Image
+                  src={img.url}
+                  alt={`${product.name} - Image ${index + 1}`}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  loading="lazy"
+                />
+              </div>
+            ))
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-[#D4C4B0]">
               <span className="text-2xl text-[#8B6F52] font-semibold">
@@ -221,17 +235,17 @@ export default function ProductCard({ product }: { product: Product }) {
 
           {product.badge && (
             <span 
-              className={`absolute top-2 sm:top-3 left-2 sm:left-3 uppercase rounded z-10 
+              className={`absolute top-[4px] left-[4px] uppercase rounded-none z-30 
               ${product.badge === "Sale" 
-                ? "bg-[#e2e2e2] text-white text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 sm:py-1 font-semibold tracking-widest" 
-                : "bg-[#1A1A1A] text-white text-[10px] font-bold px-2.5 py-1 shadow-sm tracking-wider"}`}
+                ? "bg-white text-black text-[9px] sm:text-[10px] px-2.5 py-1 font-bold tracking-widest border border-gray-200" 
+                : "bg-[#1A1A1A] text-white text-[10px] font-bold px-3 py-1 tracking-wider"}`}
             >
               {product.badge}
             </span>
           )}
 
           {hasSale && !product.badge && (
-            <span className="absolute top-2 sm:top-3 left-2 sm:left-3 text-[9px] sm:text-[10px] tracking-widest uppercase px-1.5 sm:px-2 py-0.5 sm:py-1 rounded font-semibold bg-red-500 text-white z-10">
+            <span className="absolute top-[4px] left-[4px] text-[9px] sm:text-[10px] tracking-widest uppercase px-2.5 py-1 rounded-none font-bold bg-[#C1121F] text-white z-30">
               SALE
             </span>
           )}
@@ -239,16 +253,16 @@ export default function ProductCard({ product }: { product: Product }) {
           <button
             onClick={toggleWishlist}
             disabled={isTogglingWishlist}
-            className="absolute top-2 sm:top-3 right-2 sm:right-3 bg-white/80 hover:bg-white rounded-full p-1 sm:p-1.5 transition-colors shadow-sm z-10 disabled:opacity-50"
+            className="absolute top-[4px] right-[4px] bg-white/90 hover:bg-white rounded-none p-2 transition-colors shadow-sm z-30 disabled:opacity-50"
             aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
           >
             {isTogglingWishlist ? (
-              <Loader2 size={12} className="sm:w-[14px] sm:h-[14px] animate-spin text-[#1A1A1A]" />
+              <Loader2 size={14} className="animate-spin text-[#1A1A1A]" />
             ) : (
               <Heart 
-                size={12} 
-                className={`sm:w-[14px] sm:h-[14px] transition-colors ${
-                  wished ? "fill-[#e2e2e2] text-[#e2e2e2]" : "text-[#1A1A1A]"
+                size={14} 
+                className={`transition-colors ${
+                  wished ? "fill-[#C1121F] text-[#C1121F]" : "text-[#1A1A1A]"
                 }`} 
               />
             )}
@@ -259,9 +273,8 @@ export default function ProductCard({ product }: { product: Product }) {
               e.preventDefault();
               e.stopPropagation();
               if (isOutOfStock) {
-                // Modified condition based on login state
                 if (auth) {
-                  const user = auth as any; // <-- TS Error fix
+                  const user = auth as any;
                   submitNotifyRequest(user.name || "Logged-in User", user.email || user.phone || "User Account");
                 } else {
                   setShowNotifyModal(true);
@@ -272,28 +285,28 @@ export default function ProductCard({ product }: { product: Product }) {
             }}
             disabled={(!isOutOfStock && isAddingToCart) || notifyLoading}
             data-testid="product-card-add-to-cart"
-            className={`absolute bottom-0 left-0 right-0 text-[10px] sm:text-xs tracking-widest uppercase text-center py-2.5 sm:py-3 transition-all duration-300 font-semibold z-10 translate-y-0 md:translate-y-full md:group-hover:translate-y-0
-              ${added ? "bg-[#e2e2e2] text-white" : 
-                isOutOfStock ? "bg-[#C1121F] text-white hover:bg-red-700" : 
-                "bg-[#1A1A1A] text-white hover:bg-[#e2e2e2]"}`}
+            className={`absolute bottom-0 left-0 right-0 text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-center py-3.5 transition-all duration-300 font-bold z-30 translate-y-0 md:translate-y-full md:group-hover:translate-y-0 rounded-none
+              ${added ? "bg-white text-black border-t border-gray-200" : 
+                isOutOfStock ? "bg-[#C1121F] text-white hover:bg-red-800" : 
+                "bg-[#1A1A1A] text-white hover:bg-[#333333]"}`}
           >
             {notifyLoading ? (
-              <span className="flex items-center justify-center gap-1">
-                <Loader2 size={12} className="animate-spin" />
+              <span className="flex items-center justify-center gap-[4px]">
+                <Loader2 size={14} className="animate-spin" />
                 Notifying...
               </span>
             ) : isAddingToCart ? (
-              <span className="flex items-center justify-center gap-1">
-                <Loader2 size={12} className="animate-spin" />
+              <span className="flex items-center justify-center gap-[4px]">
+                <Loader2 size={14} className="animate-spin" />
                 Adding...
               </span>
             ) : added ? (
-              <span className="flex items-center justify-center gap-1">
-                <Check size={12} /> Added
+              <span className="flex items-center justify-center gap-[4px]">
+                <Check size={14} /> Added
               </span>
             ) : isOutOfStock ? (
-              <span className="flex items-center justify-center gap-1">
-                <Bell size={12} /> Notify Me
+              <span className="flex items-center justify-center gap-[4px]">
+                <Bell size={14} /> Notify Me
               </span>
             ) : (
               "Add to Cart"
@@ -301,49 +314,50 @@ export default function ProductCard({ product }: { product: Product }) {
           </button>
         </div>
 
-        <div className="mt-2 sm:mt-3 px-0.5">
-          <p className="text-[9px] sm:text-[10px] tracking-widest uppercase text-[#8B6F52]">
+        <div className="flex flex-col flex-grow mt-3 px-[4px]">
+          <p className="text-[9px] sm:text-[10px] tracking-widest uppercase text-[#8B6F52] font-semibold mb-[4px]">
             {product.category?.name || ""}
           </p>
-          <p className="text-xs sm:text-sm text-[#1A1A1A] mt-0.5 font-medium leading-snug line-clamp-1">
+          <p className="text-sm sm:text-[15px] text-[#1A1A1A] font-serif leading-snug line-clamp-2">
             {product.name}
           </p>
-          <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
-            <span className={`text-xs sm:text-sm font-semibold text-[#1A1A1A] ${hasSale ? "text-red-600" : ""}`}>
+          <div className="flex items-center gap-[4px] sm:gap-[6px] mt-[4px] flex-wrap">
+            <span className={`text-sm sm:text-base font-medium ${hasSale ? "text-[#C1121F]" : "text-[#1A1A1A]"}`}>
               {formatPrice(displayPrice)}
             </span>
             {hasSale && (
-              <span className="text-[10px] sm:text-xs text-[#8B6F52] line-through">
+              <span className="text-[11px] sm:text-xs text-gray-500 line-through">
                 {formatPrice(product.price)}
               </span>
             )}
           </div>
           {isOutOfStock && (
-            <span className="text-[10px] text-[#C1121F] font-medium mt-1 inline-block">
+            <span className="text-[10px] text-[#C1121F] font-bold uppercase tracking-widest mt-[4px] inline-block">
               Out of Stock
             </span>
           )}
         </div>
       </Link>
 
-      {/* Notify Me Modal (Placed outside Link to prevent navigation issues) */}
       {showNotifyModal && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
           onClick={(e) => e.stopPropagation()} 
         >
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl relative text-left">
+          <div className="bg-white rounded-none p-8 w-full max-w-md shadow-2xl relative text-left">
             <button 
               onClick={(e) => {
                 e.stopPropagation();
                 setShowNotifyModal(false);
               }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+              className="absolute top-5 right-5 text-gray-400 hover:text-[#1A1A1A] transition-colors"
             >
-              ×
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
-            <h3 className="text-xl font-semibold mb-3 text-[#1A1A1A]">Notify Me</h3>
-            <p className="text-sm text-gray-600 mb-5">
+            <h3 className="text-2xl font-serif mb-2 text-[#1A1A1A]">Notify Me</h3>
+            <p className="text-sm text-gray-500 mb-6 font-light">
               Leave your details below and we will notify you when <strong>{product.name}</strong> is back in stock.
             </p>
             <form onSubmit={(e) => {
@@ -351,24 +365,24 @@ export default function ProductCard({ product }: { product: Product }) {
               submitNotifyRequest(formData.name, formData.contact);
             }} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label className="block text-[11px] font-bold tracking-widest uppercase text-gray-800 mb-2">Name</label>
                 <input
                   required
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#AEAA9B] text-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:border-[#1A1A1A] text-[#1A1A1A] transition-colors bg-[#FAF7F2]"
                   placeholder="Enter your name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email / Phone Number</label>
+                <label className="block text-[11px] font-bold tracking-widest uppercase text-gray-800 mb-2">Email / Phone</label>
                 <input
                   required
                   type="text"
                   value={formData.contact}
                   onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#AEAA9B] text-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-none focus:outline-none focus:border-[#1A1A1A] text-[#1A1A1A] transition-colors bg-[#FAF7F2]"
                   placeholder="name@example.com or +91 9876543210"
                 />
               </div>
@@ -379,14 +393,14 @@ export default function ProductCard({ product }: { product: Product }) {
                     e.stopPropagation();
                     setShowNotifyModal(false);
                   }}
-                  className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+                  className="px-6 py-3 text-[11px] font-bold tracking-widest uppercase text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={notifyLoading}
-                  className="px-5 py-2.5 bg-[#1A1A1A] text-white rounded-lg hover:bg-[#AEAA9B] transition-colors disabled:opacity-70 font-medium flex items-center gap-2"
+                  className="px-6 py-3 bg-[#1A1A1A] text-white rounded-none hover:bg-[#333333] transition-colors disabled:opacity-70 text-[11px] font-bold tracking-widest uppercase flex items-center gap-[4px]"
                 >
                   {notifyLoading ? "Sending..." : "Notify Me"}
                 </button>

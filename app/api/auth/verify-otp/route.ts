@@ -77,7 +77,7 @@ export async function POST(req: Request) {
     // 🔴 FIX: Added 'userId' here because your adminMiddleware specifically checks for session.userId
     const token = await new SignJWT({ 
         userId: user._id.toString(), // Yeh line teri block request ko fix karegi
-        id: user._id.toString(),     // Frontend/Safety ke liye id bhi retain rakha hai
+        id: user._id.toString(),    // Frontend/Safety ke liye id bhi retain rakha hai
         role: user.role 
       })
       .setProtectedHeader({ alg: 'HS256' })
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
 
     return response;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Verify OTP Error:", error);
     return NextResponse.json({ success: false, message: error.message || 'Internal Server Error' }, { status: 500 });
   }

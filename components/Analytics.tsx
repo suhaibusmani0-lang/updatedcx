@@ -1,25 +1,16 @@
 "use client";
 
 import Script from "next/script";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
-/**
- * Google Analytics 4 + Meta (Facebook) Pixel integration.
- * Injects tracking scripts and fires page_view events on route changes.
- *
- * IDs are read from environment variables:
- *   NEXT_PUBLIC_GA_ID      – GA4 Measurement ID (e.g. G-XXXXXXXXXX)
- *   NEXT_PUBLIC_META_PIXEL_ID – Meta Pixel ID (e.g. 1234567890123456)
- *
- * If an ID is missing or set to the placeholder value, the corresponding
- * script is skipped (safe no-op).
- */
+// 💡 AGAR TUM REDUX USE KAR RAHE HO TOH INKO UNCOMMENT KAR LENA:
+// import { useSelector } from "react-redux";
+// import type { RootState } from "@/store/store";
 
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-VPY34LER6S";
-const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-VPY34LER6S";
+const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "1559963569009412";
 
-// Placeholders to skip (so builds don't emit real events with dummy IDs)
 const PLACEHOLDERS = new Set(["", "G-DEMO", "DEMO", "REPLACE_ME"]);
 
 const gaEnabled = !!GA_ID && !PLACEHOLDERS.has(GA_ID);
@@ -40,21 +31,68 @@ export default function Analytics() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  // 🔥 USER TRACKING TAGS (Email & Name)
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+
+  // 👉 METHOD 1: Redux Se (Agar Analytics component Provider ke andar hai toh ise use karo)
+  // const auth = useSelector((state: RootState) => state.authStore?.auth);
+  // useEffect(() => {
+  //   if (auth?.email) setUserEmail(auth.email);
+  //   if (auth?.name) setUserName(auth.name);
+  // }, [auth]);
+
+  // 👉 METHOD 2: LocalStorage Se (Safe method, kisi bhi component mein chalega)
+  useEffect(() => {
+    try {
+      // Apne hisaab se LocalStorage ki key change kar lena (e.g., 'user' ya 'persist:root')
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        if (user?.email) setUserEmail(user.email);
+        if (user?.name) setUserName(user.name);
+      }
+    } catch (error) {
+      console.error("Could not fetch user data for tracking", error);
+    }
+  }, [pathname]);
+
+
   useEffect(() => {
     if (!pathname) return;
 
     const url =
       pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : "");
 
+    // --- 1. GOOGLE ANALYTICS (GA4) ---
     if (gaEnabled && typeof window.gtag === "function") {
-      window.gtag("config", GA_ID as string, {
-        page_path: url,
-      });
+      const gaConfig: Record<string, string | boolean> = { page_path: url };
+      
+      // Email ID Tag for GA4
+      if (userEmail) {
+        gaConfig.user_id = userEmail;
+      }
+      window.gtag("config", GA_ID as string, gaConfig);
     }
+
+    // --- 2. META PIXEL (FACEBOOK) ---
     if (pixelEnabled && typeof window.fbq === "function") {
+      
+      // Advanced Matching Tags (Email ID aur Name)
+      if (userEmail) {
+        window.fbq("init", META_PIXEL_ID as string, {
+          em: userEmail.toLowerCase(),
+          ...(userName && { fn: userName.toLowerCase() }) // Name Tag
+        });
+      } else {
+        // Bina login wale users ke liye normal init
+        window.fbq("init", META_PIXEL_ID as string);
+      }
+      
+      // Hit PageView
       window.fbq("track", "PageView");
     }
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, userEmail, userName]);
 
   return (
     <>
@@ -70,7 +108,7 @@ export default function Analytics() {
               function gtag(){window.dataLayer.push(arguments);}
               window.gtag = gtag;
               gtag('js', new Date());
-              gtag('config', '${GA_ID}', { send_page_view: true });
+              // Config is handled dynamically in useEffect above to pass Email Tags
             `}
           </Script>
         </>
@@ -88,8 +126,8 @@ export default function Analytics() {
               t.src=v;s=b.getElementsByTagName(e)[0];
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
-              fbq('init', '${META_PIXEL_ID}');
-              fbq('track', 'PageView');
+              
+              // Initialization & Tracking handled dynamically in useEffect above to pass Email/Name Tags
             `}
           </Script>
           <noscript>

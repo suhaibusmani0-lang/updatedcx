@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Loader2, AlertCircle, CheckCircle, X, Upload, Trash2 } from "lucide-react";
 
+// 🔥 USING react-quill-new FOR REACT 19 COMPATIBILITY
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+
 interface Category {
   _id: string;
   name: string;
@@ -19,7 +25,18 @@ interface FormErrors {
   salePrice?: string;
   stock?: string;
   images?: string;
+  shortDescription?: string;
+  description?: string;
 }
+
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["clean"],
+  ],
+};
 
 export default function AddProductPage() {
   const router = useRouter();
@@ -78,7 +95,6 @@ export default function AddProductPage() {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      // Clean up image previews
       imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
     };
   }, []);
@@ -94,7 +110,6 @@ export default function AddProductPage() {
   const validateForm = useCallback((): boolean => {
     const newErrors: FormErrors = {};
     
-    // Name validation
     if (!form.name.trim()) {
       newErrors.name = "Product name is required";
     } else if (form.name.length < 3) {
@@ -103,26 +118,22 @@ export default function AddProductPage() {
       newErrors.name = "Product name must be less than 100 characters";
     }
     
-    // Slug validation
     if (!form.slug.trim()) {
       newErrors.slug = "Slug is required";
     } else if (!/^[a-z0-9-]+$/.test(form.slug)) {
       newErrors.slug = "Slug can only contain lowercase letters, numbers, and hyphens";
     }
     
-    // SKU validation
     if (!form.sku.trim()) {
       newErrors.sku = "SKU is required";
     } else if (form.sku.length < 2) {
       newErrors.sku = "SKU must be at least 2 characters";
     }
     
-    // Category validation
     if (!form.category) {
       newErrors.category = "Please select a category";
     }
     
-    // Price validation
     const priceNum = parseFloat(form.price);
     if (!form.price) {
       newErrors.price = "Price is required";
@@ -130,7 +141,6 @@ export default function AddProductPage() {
       newErrors.price = "Price must be a positive number";
     }
     
-    // Sale price validation
     const salePriceNum = parseFloat(form.salePrice);
     if (form.salePrice) {
       if (isNaN(salePriceNum) || salePriceNum < 0) {
@@ -140,7 +150,6 @@ export default function AddProductPage() {
       }
     }
     
-    // Stock validation
     const stockNum = parseInt(form.stock);
     if (!form.stock) {
       newErrors.stock = "Stock is required";
@@ -148,7 +157,6 @@ export default function AddProductPage() {
       newErrors.stock = "Stock must be a non-negative number";
     }
     
-    // Images validation
     if (images.length === 0) {
       newErrors.images = "Please add at least one product image";
     } else if (images.length > 10) {
@@ -185,12 +193,19 @@ export default function AddProductPage() {
     }
   };
 
+  const handleRichTextChange = (name: keyof typeof form, value: string) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setIsDirty(true);
+    if (errors[name as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
     if (files.length === 0) return;
     
-    // Validate total images
     if (images.length + files.length > 10) {
       setErrors((prev) => ({ 
         ...prev, 
@@ -199,7 +214,6 @@ export default function AddProductPage() {
       return;
     }
     
-    // Validate each file
     const validFiles: File[] = [];
     const invalidFiles: string[] = [];
     
@@ -221,17 +235,14 @@ export default function AddProductPage() {
       return;
     }
     
-    // Add valid files
     setImages((prev) => [...prev, ...validFiles]);
     
-    // Create previews
     const newPreviews = validFiles.map(file => URL.createObjectURL(file));
     setImagePreviews((prev) => [...prev, ...newPreviews]);
     
     setIsDirty(true);
     setErrors((prev) => ({ ...prev, images: undefined }));
     
-    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -258,7 +269,6 @@ export default function AddProductPage() {
     e.preventDefault();
     
     if (!validateForm()) {
-      // Scroll to first error
       const firstErrorField = Object.keys(errors)[0];
       const element = document.querySelector(`[name="${firstErrorField}"]`);
       if (element) {
@@ -274,15 +284,9 @@ export default function AddProductPage() {
 
       const payload = new FormData();
       
-      // Append form data
       Object.entries(form).forEach(([key, val]) => {
         if (key === 'sizes' || key === 'colors') return;
-        
-        if (typeof val === "boolean") {
-          payload.append(key, String(val));
-        } else {
-          payload.append(key, String(val));
-        }
+        payload.append(key, String(val));
       });
       
       if (form.sizes) {
@@ -292,7 +296,6 @@ export default function AddProductPage() {
         form.colors.split(',').map(c => c.trim()).filter(Boolean).forEach(c => payload.append("colors", c));
       }
       
-      // Append images
       images.forEach((img) => payload.append("images", img));
 
       abortControllerRef.current = new AbortController();
@@ -309,7 +312,6 @@ export default function AddProductPage() {
         setSubmitSuccess("Product created successfully!");
         setIsDirty(false);
         
-        // Reset form
         setForm({
           name: "",
           slug: "",
@@ -329,12 +331,10 @@ export default function AddProductPage() {
           isActive: true,
         });
         
-        // Clear images
         setImages([]);
         imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
         setImagePreviews([]);
         
-        // Redirect after a short delay
         setTimeout(() => {
           router.push("/admin/products");
         }, 1500);
@@ -368,49 +368,41 @@ export default function AddProductPage() {
       hasError ? "border-red-500" : "border-gray-300"
     }`;
 
+  const quillWrapperCls = (hasError?: boolean) => 
+    `w-full border rounded-lg overflow-hidden transition ${
+      hasError ? "border-red-500" : "border-gray-300"
+    } [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-200 [&_.ql-container]:border-none [&_.ql-editor]:min-h-[100px]`;
+
   return (
     <div className="max-w-3xl mx-auto p-6">
       <div className="bg-white shadow rounded-lg p-6">
         <h1 className="text-2xl font-bold mb-6">Add Product</h1>
         
-        {/* Success Message */}
         {submitSuccess && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
             <CheckCircle size={20} className="text-green-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-green-800">{submitSuccess}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setSubmitSuccess(null)}
-              className="text-green-600 hover:text-green-800"
-              aria-label="Dismiss success message"
-            >
+            <button type="button" onClick={() => setSubmitSuccess(null)} className="text-green-600 hover:text-green-800">
               <X size={18} />
             </button>
           </div>
         )}
         
-        {/* Error Message */}
         {submitError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
             <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-red-800">{submitError}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setSubmitError(null)}
-              className="text-red-600 hover:text-red-800"
-              aria-label="Dismiss error message"
-            >
+            <button type="button" onClick={() => setSubmitError(null)} className="text-red-600 hover:text-red-800">
               <X size={18} />
             </button>
           </div>
         )}
         
         <form onSubmit={submitHandler} className="space-y-5">
-          {/* Product Name */}
           {field("Product Name *", 
             <input 
               name="name"
@@ -425,7 +417,6 @@ export default function AddProductPage() {
             errors.name
           )}
           
-          {/* Slug */}
           {field("Slug *", 
             <input 
               name="slug"
@@ -436,7 +427,6 @@ export default function AddProductPage() {
             errors.slug
           )}
           
-          {/* SKU */}
           {field("SKU *", 
             <input 
               name="sku"
@@ -450,7 +440,6 @@ export default function AddProductPage() {
             errors.sku
           )}
           
-          {/* Category */}
           {field("Category *", 
             <select 
               name="category"
@@ -467,7 +456,6 @@ export default function AddProductPage() {
             errors.category
           )}
           
-          {/* Price & Sale Price */}
           <div className="grid grid-cols-2 gap-4">
             {field("Price (₹) *", 
               <input 
@@ -498,7 +486,6 @@ export default function AddProductPage() {
             )}
           </div>
           
-          {/* Stock */}
           {field("Stock *", 
             <input 
               type="number" 
@@ -512,7 +499,6 @@ export default function AddProductPage() {
             errors.stock
           )}
           
-          {/* Badge */}
           {field("Badge", 
             <input 
               name="badge"
@@ -524,7 +510,6 @@ export default function AddProductPage() {
             />
           )}
 
-          
           {field("Colors (Comma separated, optional)", 
             <input 
               name="colors"
@@ -535,7 +520,6 @@ export default function AddProductPage() {
             />
           )}
 
-          
           {field("Sizes (Comma separated, optional)", 
             <input 
               name="sizes"
@@ -546,39 +530,31 @@ export default function AddProductPage() {
             />
           )}
           
-          {/* Short Description */}
           {field("Short Description", 
-            <textarea 
-              name="shortDescription"
-              className={inputCls()} 
-              rows={2} 
-              value={form.shortDescription}
-              onChange={handleInputChange}
-              placeholder="Brief product description"
-              maxLength={200}
-            />
+            <div className={quillWrapperCls()}>
+              <ReactQuill
+                theme="snow"
+                value={form.shortDescription}
+                onChange={(val) => handleRichTextChange("shortDescription", val)}
+                modules={quillModules}
+                placeholder="Brief product description..."
+              />
+            </div>
           )}
-          <p className="text-gray-400 text-xs -mt-3">
-            {form.shortDescription.length}/200 characters
-          </p>
           
-          {/* Full Description */}
           {field("Full Description", 
-            <textarea 
-              name="description"
-              className={inputCls()} 
-              rows={5} 
-              value={form.description}
-              onChange={handleInputChange}
-              placeholder="Detailed product description"
-              maxLength={2000}
-            />
+            <div className={quillWrapperCls()}>
+              <ReactQuill
+                theme="snow"
+                value={form.description}
+                onChange={(val) => handleRichTextChange("description", val)}
+                modules={quillModules}
+                placeholder="Detailed product description..."
+                className="[&_.ql-editor]:min-h-[200px]"
+              />
+            </div>
           )}
-          <p className="text-gray-400 text-xs -mt-3">
-            {form.description.length}/2000 characters
-          </p>
           
-          {/* Gallery Images */}
           {field("Gallery Images *", 
             <div>
               <input
@@ -596,34 +572,23 @@ export default function AddProductPage() {
             errors.images
           )}
           
-          {/* Image Previews */}
           {imagePreviews.length > 0 && (
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
               {imagePreviews.map((preview, index) => (
                 <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group">
-                  <Image
-                    src={preview}
-                    alt={`Preview ${index + 1}`}
-                    fill
-                    className="object-cover"
-                  />
+                  <Image src={preview} alt={`Preview ${index + 1}`} fill className="object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
                     className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
-                    aria-label={`Remove image ${index + 1}`}
                   >
                     <X size={12} />
                   </button>
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] text-center py-0.5">
-                    {index + 1}
-                  </div>
                 </div>
               ))}
             </div>
           )}
           
-          {/* Checkboxes */}
           <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg">
             {[
               ["isFeatured", "Featured Product"],
@@ -644,12 +609,11 @@ export default function AddProductPage() {
             ))}
           </div>
           
-          {/* Actions */}
           <div className="flex items-center gap-3 pt-4 border-t">
             <button
               type="submit"
               disabled={loading}
-              className="bg-[#1A1A1A] text-white px-6 py-3 rounded-lg hover:bg-[#AEAA9B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="bg-[#1A1A1A] text-white px-6 py-3 rounded-lg hover:bg-[#AEAA9B] transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {loading ? (
                 <>

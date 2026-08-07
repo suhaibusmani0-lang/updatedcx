@@ -36,17 +36,32 @@ import SignInPopup from "@/components/SignInPopup";
 function LoginTrigger() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
+  const auth = useSelector((state: RootState) => state.authStore.auth);
+  
+  // 🔥 BUG FIX: Stale Closure Fix
+  // useRef hamesha latest value store karega, taaki setTimeout purani null value na pakde
+  const authRef = useRef(auth);
+
+  useEffect(() => {
+    authRef.current = auth;
+  }, [auth]);
 
   useEffect(() => {
     if (searchParams.get("showLogin") === "true") {
-      // Thoda delay taaki page pura load ho jaye
-      setTimeout(() => {
-        (window as any).showSignInPopup?.();
-        // URL se ?showLogin=true hata dete hain taaki refresh pe baar-baar na khule
-        router.replace("/", { scroll: false });
+      const timer = setTimeout(() => {
+        // Hamesha latest state check karega
+        if (!authRef.current) {
+          (window as any).showSignInPopup?.();
+        }
+        // Query param hata dega bina page reload kiye
+        router.replace(pathname || "/", { scroll: false });
       }, 500);
+
+      // Cleanup function taaki double popup na khule
+      return () => clearTimeout(timer);
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, pathname]);
 
   return null;
 }
@@ -246,7 +261,6 @@ export default function Header() {
 
   return (
     <>
-      
       <Suspense fallback={null}>
         <LoginTrigger />
       </Suspense>
@@ -334,7 +348,8 @@ export default function Header() {
               {auth ? (
                 <div className="hidden sm:flex items-center gap-2">
                   <Link
-                    href={auth.role === "admin" ? "/admin/dashboard" : "/my-account"}
+                    // 🔥 Fixed Admin URL
+                    href={auth?.role?.trim().toLowerCase() === "admin" ? "/admin/dashboard" : "/my-account"}
                     className="text-[10px] sm:text-xs hover:text-gray-600 flex flex-col items-center"
                   >
                     <User size={20} className="sm:w-[22px] sm:h-[22px]" />
@@ -367,7 +382,8 @@ export default function Header() {
               {/* Mobile account icon */}
               {auth ? (
                 <Link
-                  href={auth.role === "admin" ? "/admin/dashboard" : "/my-account"}
+                  // 🔥 Fixed Admin URL
+                  href={auth?.role?.trim().toLowerCase() === "admin" ? "/admin/dashboard" : "/my-account"}
                   className="sm:hidden flex flex-col items-center text-[10px] hover:text-gray-600"
                 >
                   <User size={20} />
@@ -718,7 +734,8 @@ export default function Header() {
 
           {auth ? (
             <Link
-              href={auth.role === "admin" ? "/admin/dashboard" : "/my-account"}
+              // 🔥 Fixed Admin URL
+              href={auth?.role?.trim().toLowerCase() === "admin" ? "/admin/dashboard" : "/my-account"}
               onClick={() => setMobileMenu(false)}
               className="flex items-center gap-2"
             >

@@ -5,6 +5,23 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { showToast } from "@/lib/showToast";
 
+// 🔥 USING react-quill-new FOR REACT 19 COMPATIBILITY (Same as Add Page)
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["clean"],
+  ],
+};
+
+const quillWrapperCls = "w-full border rounded-lg overflow-hidden transition border-gray-300 [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-200 [&_.ql-container]:border-none [&_.ql-editor]:min-h-[100px]";
+
 // Types for your data
 interface Category {
   _id: string;
@@ -36,20 +53,20 @@ interface ProductForm {
 }
 
 interface Props {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function EditProductPage({ params }: Props) {
-  const { id } = params;
-
   const router = useRouter();
+  
   // ---------- State ----------
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
+  const [id, setId] = useState<string>("");
 
   // Form fields
   const [form, setForm] = useState<ProductForm>({
@@ -76,11 +93,15 @@ export default function EditProductPage({ params }: Props) {
 
   // ---------- Fetch product & categories ----------
   useEffect(() => {
-    async function fetchData() {
+    async function unwrapParamsAndFetch() {
       try {
+        const unwrappedParams = await params;
+        const productId = unwrappedParams.id;
+        setId(productId);
+
         setLoading(true);
         // 1) Fetch product details
-        const productRes = await fetch(`/api/admin/products/${id}`);
+        const productRes = await fetch(`/api/admin/products/${productId}`);
         if (!productRes.ok) throw new Error("Failed to fetch product");
         const productData = await productRes.json();
         // Ensure category is stored as string (ID)
@@ -104,8 +125,9 @@ export default function EditProductPage({ params }: Props) {
         setLoading(false);
       }
     }
-    fetchData();
-  }, [id]);
+    
+    unwrapParamsAndFetch();
+  }, [params]);
 
   // ---------- Handle text/select/checkbox changes ----------
   function handleChange(
@@ -117,6 +139,11 @@ export default function EditProductPage({ params }: Props) {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  }
+
+  // ---------- Handle Rich Text changes ----------
+  function handleRichTextChange(name: keyof ProductForm, value: string) {
+    setForm((prev) => ({ ...prev, [name]: value }));
   }
 
   // ---------- Handle image file selection ----------
@@ -242,26 +269,32 @@ export default function EditProductPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Description */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Description</label>
-          <textarea
-            name="description"
-            rows={3}
-            value={form.description}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
-          />
-        </div>
+        {/* 🔥 FIXED: Short Description & Description now use ReactQuill */}
         <div>
           <label className="block text-sm font-medium mb-1">Short Description</label>
-          <input
-            type="text"
-            name="shortDescription"
-            value={form.shortDescription}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
-          />
+          <div className={quillWrapperCls}>
+            <ReactQuill
+              theme="snow"
+              value={form.shortDescription}
+              onChange={(val) => handleRichTextChange("shortDescription", val)}
+              modules={quillModules}
+              placeholder="Brief product description..."
+            />
+          </div>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-1">Full Description</label>
+          <div className={quillWrapperCls}>
+            <ReactQuill
+              theme="snow"
+              value={form.description}
+              onChange={(val) => handleRichTextChange("description", val)}
+              modules={quillModules}
+              placeholder="Detailed product description..."
+              className="[&_.ql-editor]:min-h-[200px]"
+            />
+          </div>
         </div>
 
         {/* Pricing & Stock */}
@@ -408,14 +441,14 @@ export default function EditProductPage({ params }: Props) {
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2 bg-[#AEAA9B] text-white rounded hover:bg-[#a86545] disabled:opacity-50"
+            className="px-6 py-2 bg-[#1A1A1A] text-white rounded hover:bg-[#AEAA9B] disabled:opacity-50 transition-colors"
           >
             {saving ? "Saving..." : "Update Product"}
           </button>
           <button
             type="button"
             onClick={() => router.push("/admin/products")}
-            className="px-6 py-2 border border-gray-300 rounded hover:bg-gray-50"
+            className="px-6 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
           >
             Cancel
           </button>

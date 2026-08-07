@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/databaseConnection';
 import UserModel from '@/models/User.model';
 import OtpModel from '@/models/Otp.model'; 
-import { SignJWT } from 'jose'; // 🔥 Added jose library (since your middleware uses it)
+import { SignJWT } from 'jose'; 
 
-export async function POST(req: Request) {
+export async function POST(req) {
   try {
     await connectDB(); 
 
@@ -74,7 +74,12 @@ export async function POST(req: Request) {
       process.env.JWT_SECRET || "fallback-dev-secret-change-in-production"
     );
     
-    const token = await new SignJWT({ id: user._id.toString(), role: user.role })
+    // 🔴 FIX: Added 'userId' here because your adminMiddleware specifically checks for session.userId
+    const token = await new SignJWT({ 
+        userId: user._id.toString(), // Yeh line teri block request ko fix karegi
+        id: user._id.toString(),     // Frontend/Safety ke liye id bhi retain rakha hai
+        role: user.role 
+      })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('7d')
       .sign(secret);
@@ -107,7 +112,7 @@ export async function POST(req: Request) {
 
     return response;
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Verify OTP Error:", error);
     return NextResponse.json({ success: false, message: error.message || 'Internal Server Error' }, { status: 500 });
   }

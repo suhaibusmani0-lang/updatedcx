@@ -186,11 +186,21 @@ export default async function ProductPage({
 
   const { product, reviews, relatedProducts } = data;
   const price = product.salePrice ?? product.price;
-  const discount = product.salePrice
-    ? Math.round(((product.price - product.salePrice) / product.price) * 100)
-    : 0;
   const averageRating = product.ratings?.average || 0;
   const ratingCount = product.ratings?.count || 0;
+
+  // 🔥 SUPER PARSER FOR COLORS & SIZES
+  const rawColors = product.colors || [];
+  const displayColors = (Array.isArray(rawColors) ? rawColors : [rawColors])
+    .flatMap(c => typeof c === 'string' ? c.split(',') : [])
+    .map(c => c.trim())
+    .filter(Boolean);
+
+  const rawSizes = product.sizes || [];
+  const displaySizes = (Array.isArray(rawSizes) ? rawSizes : [rawSizes])
+    .flatMap(s => typeof s === 'string' ? s.split(',') : [])
+    .map(s => s.trim())
+    .filter(Boolean);
 
   const productSchema = {
     "@context": "https://schema.org",
@@ -267,70 +277,45 @@ export default async function ProductPage({
       />
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         
-        {/* Breadcrumb - Pottery Barn Style */}
+        {/* Breadcrumb */}
         <nav
           data-testid="product-breadcrumb"
           className="flex flex-wrap items-center gap-2 text-[13px] text-gray-500 mb-8 font-medium"
         >
-          <Link href="/" className="hover:text-black">
-            Home
-          </Link>
-          
-          
+          <Link href="/" className="hover:text-black">Home</Link>
           {product.category?.parent && (
             <>
               <span className="text-gray-400">{">"}</span>
-              <Link
-                href={`/category/${product.category.parent.slug}`}
-                className="hover:text-black whitespace-nowrap"
-              >
+              <Link href={`/category/${product.category.parent.slug}`} className="hover:text-black whitespace-nowrap">
                 {product.category.parent.name}
               </Link>
             </>
           )}
-
           <span className="text-gray-400">{">"}</span>
-          
           {product.category?.slug ? (
-            <Link
-              href={`/category/${product.category.slug}`}
-              className="hover:text-black whitespace-nowrap"
-            >
+            <Link href={`/category/${product.category.slug}`} className="hover:text-black whitespace-nowrap">
               {product.category.name}
             </Link>
           ) : (
             <span>{product.category?.name || "Uncategorized"}</span>
           )}
-          
           <span className="text-gray-400">{">"}</span>
           <span className="text-black whitespace-nowrap">{product.name}</span>
         </nav>
 
-        {/* Main Product Layout: 7 Columns for Image, 5 for Details */}
+        {/* Main Product Layout */}
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 mb-16 relative">
           
-          {/* Left Side: Product Gallery (with Magnifier) */}
           <div className="w-full lg:w-[60%]">
-            <ProductGalleries
-              images={product.images}
-              name={product.name}
-              badge={product.badge}
-            />
+            <ProductGalleries images={product.images} name={product.name} badge={product.badge} />
           </div>
 
-          {/* Right Side: Product Details */}
           <div className="w-full lg:w-[40%] flex flex-col pt-4">
             
-            {/* Title & Badge */}
             <div className="flex flex-col mb-4">
-              <h1
-                data-testid="product-name"
-                className="text-2xl md:text-[28px] font-medium text-[#1A1A1A] leading-tight pr-4"
-              >
+              <h1 data-testid="product-name" className="text-2xl md:text-[28px] font-medium text-[#1A1A1A] leading-tight pr-4">
                 {product.name}
               </h1>
-              
-              
               {product.sku && (
                 <p className="text-sm text-gray-400 mt-2 font-medium tracking-wide">
                   SKU: <span className="text-gray-700">{product.sku}</span>
@@ -338,14 +323,34 @@ export default async function ProductPage({
               )}
             </div>
 
-            
+            {/* 🔥 FIXED: Short Description with Working Read More */}
             {product.shortDescription && (
-              <p className="text-[15px] text-gray-600 leading-relaxed mb-6">
-                {product.shortDescription}
-              </p>
+              <div className="relative mb-6">
+                <input type="checkbox" id="short-desc-toggle" className="peer sr-only" />
+                
+                <div 
+                  className="text-[15px] text-gray-600 leading-relaxed prose prose-sm max-w-none relative overflow-hidden max-h-[4.5rem] peer-checked:max-h-[2000px] transition-all duration-500 ease-in-out break-words"
+                  dangerouslySetInnerHTML={{ __html: product.shortDescription }}
+                />
+                
+                <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-white to-transparent peer-checked:hidden pointer-events-none"></div>
+                
+                <label 
+                  htmlFor="short-desc-toggle" 
+                  className="inline-block mt-2 text-sm font-semibold text-[#1A1A1A] cursor-pointer underline peer-checked:hidden hover:text-gray-600 transition-colors"
+                >
+                  Read More
+                </label>
+                <label 
+                  htmlFor="short-desc-toggle" 
+                  className="hidden mt-2 text-sm font-semibold text-[#1A1A1A] cursor-pointer underline peer-checked:inline-block hover:text-gray-600 transition-colors"
+                >
+                  Show Less
+                </label>
+              </div>
             )}
 
-            {/* Pricing Section (Pottery Barn Style) */}
+            {/* Pricing Section */}
             <div className="flex flex-col mb-6">
               <div className="flex items-center gap-3 mb-1">
                 {product.salePrice ? (
@@ -375,21 +380,17 @@ export default async function ProductPage({
                     <Star
                       key={star}
                       size={16}
-                      className={
-                        star <= Math.round(averageRating)
-                          ? "fill-[#1A1A1A] text-[#1A1A1A]"
-                          : "text-gray-300"
-                      }
+                      className={star <= Math.round(averageRating) ? "fill-[#1A1A1A] text-[#1A1A1A]" : "text-gray-300"}
                     />
                   ))}
                 </div>
-                <span className="text-sm text-gray-500">
-                  ({ratingCount} Reviews)
-                </span>
+                <span className="text-sm text-gray-500">({ratingCount} Reviews)</span>
               </div>
             )}
 
-            {/* Actions & Buttons */}
+            {/* 🔥 NOTE: Static Colors & Sizes removed. Now they will only be rendered by ProductActions below! */}
+
+            {/* Actions & Buttons (This handles selections and Add To Cart) */}
             <div className="mb-6 space-y-4">
                <ProductActions
                 productId={product._id}
@@ -398,12 +399,12 @@ export default async function ProductPage({
                 price={price}
                 slug={product.slug}
                 stock={product.stock}
-                sizes={product.sizes as any}
-                colors={product.colors as any}
+                sizes={displaySizes as any}
+                colors={displayColors as any}
               />
             </div>
 
-            {/* Pincode Checker (Grey Box Style) */}
+            {/* Pincode Checker */}
             <div className="bg-[#EAEAEA] p-5 mb-8">
               <p className="text-sm font-medium text-gray-800 mb-3">Enter PIN code for a better delivery estimate</p>
               <div className="bg-white">
@@ -416,15 +417,37 @@ export default async function ProductPage({
         </div>
         
         <div className="max-w-4xl mx-auto space-y-16 py-12 border-t border-slate-200">
+          
+          {/* 🔥 FIXED: Full Description with Working Read More */}
           <section>
             <h2 className="text-2xl font-light text-slate-900 mb-6">Product description</h2>
-            <div className="prose prose-slate prose-p:leading-relaxed max-w-none text-slate-600">
-              {product.description ? (
-                <p>{product.description}</p>
-              ) : (
-                <p className="italic text-slate-400">No detailed description available.</p>
-              )}
-            </div>
+            {product.description ? (
+              <div className="relative">
+                <input type="checkbox" id="full-desc-toggle" className="peer sr-only" />
+                
+                <div 
+                  className="prose prose-slate prose-p:leading-relaxed max-w-none text-slate-600 break-words relative overflow-hidden max-h-[150px] peer-checked:max-h-[5000px] transition-all duration-700 ease-in-out"
+                  dangerouslySetInnerHTML={{ __html: product.description }} 
+                />
+                
+                <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-white to-transparent peer-checked:hidden pointer-events-none"></div>
+                
+                <label 
+                  htmlFor="full-desc-toggle" 
+                  className="inline-block mt-4 text-sm font-semibold text-[#1A1A1A] cursor-pointer underline peer-checked:hidden hover:text-gray-600 transition-colors"
+                >
+                  Read Full Description
+                </label>
+                <label 
+                  htmlFor="full-desc-toggle" 
+                  className="hidden mt-4 text-sm font-semibold text-[#1A1A1A] cursor-pointer underline peer-checked:inline-block hover:text-gray-600 transition-colors"
+                >
+                  Show Less
+                </label>
+              </div>
+            ) : (
+              <p className="italic text-slate-400">No detailed description available.</p>
+            )}
           </section>
 
           <section className="pt-16 border-t border-slate-100">
@@ -450,11 +473,7 @@ export default async function ProductPage({
                               <Star
                                 key={star}
                                 size={14}
-                                className={
-                                  star <= review.rating
-                                    ? "fill-slate-900 text-slate-900"
-                                    : "text-slate-200"
-                                }
+                                className={star <= review.rating ? "fill-slate-900 text-slate-900" : "text-slate-200"}
                               />
                             ))}
                           </div>
@@ -483,7 +502,7 @@ export default async function ProductPage({
           </section>
         </div>
 
-        {/* Keep Exploring Similar Items (Related Products) */}
+        {/* Keep Exploring Similar Items */}
         {relatedProducts.length > 0 && (
           <div className="mt-24 pt-10 border-t border-gray-200">
             <h2 className="text-xl text-center font-medium text-[#1A1A1A] mb-10">

@@ -208,7 +208,7 @@ export default async function CategoryPage({
                       href={`/product/${product.slug}`}
                       className="group"
                     >
-                      <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
+                      <div className="relative overflow-hidden rounded-none bg-[#F1EBE1] w-full">
                         <div className="aspect-square relative">
                           {product.images[0] ? (
                             <Image

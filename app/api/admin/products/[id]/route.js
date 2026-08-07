@@ -30,15 +30,24 @@ export async function PUT(req, { params }) {
     const newImageFiles = [];
     const deletePublicIds = [];
 
+    // 🔥 FIX: Extract arrays properly before the loop
+    const sizes = formData.getAll("sizes");
+    const colors = formData.getAll("colors");
+
     for (const [key, value] of formData.entries()) {
       if (key === "newImages") {
         newImageFiles.push(value);
       } else if (key === "deleteImages") {
         deletePublicIds.push(value);
-      } else if (key !== "images") {
+      } else if (key !== "images" && key !== "sizes" && key !== "colors") {
+        // Skip sizes and colors here so they don't get overwritten as strings
         updateData[key] = value;
       }
     }
+
+    // Assign the captured arrays
+    updateData.sizes = sizes;
+    updateData.colors = colors;
 
     // Convert numeric fields
     if (updateData.price) updateData.price = parseFloat(updateData.price);

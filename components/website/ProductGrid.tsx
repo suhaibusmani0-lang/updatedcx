@@ -110,11 +110,11 @@ export default async function ProductGrid({
 
   return (
     // 🔥 VERTICAL GAP REDUCED: py-12 se py-6 kar diya taaki gap lamba na dikhe
-    <section className="bg-[#FAF7F2] py-6 lg:py-8 border-t border-[#E3D9C9]">
+    <section className="bg-[#FAF7F2] py-2 lg:py-2 border-t border-[#E3D9C9]">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10">
 
         {/* Header row */}
-        <div className="flex items-end justify-between mb-7 sm:mb-10">
+        <div className="flex items-center justify-center mb-2 text-center">
           <div>
             <p className="text-[10px] sm:text-xs tracking-[0.3em] uppercase text-[#8B6F52] font-bold mb-1 sm:mb-2">
               {subtitle}
@@ -123,14 +123,7 @@ export default async function ProductGrid({
               {title}
             </h2>
           </div>
-          {viewAllLink && (
-            <a
-              href={viewAllLink}
-              className="hidden sm:inline text-[11px] font-bold tracking-widest uppercase text-[#1A1A1A] border-b border-[#1A1A1A] pb-0.5 hover:text-[#8B6F52] hover:border-[#8B6F52] transition-colors whitespace-nowrap"
-            >
-              View All
-            </a>
-          )}
+          
         </div>
 
         {/* Products Grid with Suspense for loading */}
@@ -158,6 +151,16 @@ export default async function ProductGrid({
             </a>
           </div>
         )}
+      </div>
+      <div className="flex items-center justify-center mb-2 mt-4 text-center">
+        {viewAllLink && (
+            <a
+              href={viewAllLink}
+              className="hidden sm:inline text-[11px] font-bold tracking-widest uppercase text-[#1A1A1A] border-b border-[#1A1A1A] pb-0.5 hover:text-[#8B6F52] hover:border-[#8B6F52] transition-colors whitespace-nowrap"
+            >
+              View All
+            </a>
+          )}
       </div>
     </section>
   );

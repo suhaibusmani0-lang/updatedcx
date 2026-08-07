@@ -3,7 +3,7 @@ import Image from "next/image";
 
 const HomePageCenterItem = () => {
   return (
-    <section className="bg-[#FAF7F2] py-16 sm:py-24">
+    <section className="bg-[#FAF7F2] py-2 sm:py-2">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10">
         
         {/* 🔥 2px EDITORIAL GAPPING: Container ka bg #E3D9C9 hai, aur gap-[2px] se ekdum patli crisp lines banengi */}

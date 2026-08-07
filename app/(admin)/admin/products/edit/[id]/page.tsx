@@ -5,6 +5,21 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Loader2, AlertCircle, CheckCircle, X} from "lucide-react";
 
+// 🔥 USING react-quill-new FOR REACT 19 COMPATIBILITY
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    ["clean"],
+  ],
+};
+
 interface Category {
   _id: string;
   name: string;
@@ -23,6 +38,8 @@ interface ProductData {
   categoryName?: string;
   badge: string;
   stock: string;
+  sizes?: string; // Added sizes
+  colors?: string; // Added colors
   images: { url: string; public_id: string }[];
   isFeatured: boolean;
   isNewArrival: boolean;
@@ -70,6 +87,8 @@ export default function EditProductPage() {
     category: "",
     badge: "",
     stock: "0",
+    sizes: "", // Initialize sizes
+    colors: "", // Initialize colors
     images: [],
     isFeatured: false,
     isNewArrival: false,
@@ -110,7 +129,6 @@ export default function EditProductPage() {
       try {
         setFetching(true);
         
-        // FIXED: Use full API path with the id
         const res = await fetch(`/api/admin/products/${id}`);
         
         if (!res.ok) {
@@ -118,7 +136,6 @@ export default function EditProductPage() {
         }
         
         const data = await res.json();
-        console.log("Product data received:", data); // Debug log
         
         if (data.ok && data.data) {
           const product = data.data;
@@ -133,6 +150,9 @@ export default function EditProductPage() {
             category: product.category?._id || product.category || "",
             badge: product.badge || "",
             stock: product.stock?.toString() || "0",
+            // Safely parse colors and sizes into comma separated strings
+            sizes: Array.isArray(product.sizes) ? product.sizes.join(", ") : product.sizes || "",
+            colors: Array.isArray(product.colors) ? product.colors.join(", ") : product.colors || "",
             images: product.images || [],
             isFeatured: product.isFeatured || false,
             isNewArrival: product.isNewArrival || false,
@@ -240,12 +260,19 @@ export default function EditProductPage() {
     }
   };
 
+  const handleRichTextChange = (name: keyof ProductData, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setIsDirty(true);
+    if (errors[name as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
   const handleNewImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     
     if (files.length === 0) return;
     
-    // Validate total images (existing - deleted + new)
     const currentImageCount = existingImages.filter(img => !imagesToDelete.includes(img.public_id)).length;
     if (currentImageCount + newImages.length + files.length > 10) {
       setSubmitError(`Maximum 10 images allowed. You can add ${10 - currentImageCount - newImages.length} more.`);
@@ -253,7 +280,6 @@ export default function EditProductPage() {
       return;
     }
     
-    // Validate each file
     const validFiles: File[] = [];
     const invalidFiles: string[] = [];
     
@@ -330,7 +356,7 @@ export default function EditProductPage() {
       const payload = new FormData();
       
       Object.entries(formData).forEach(([key, val]) => {
-        if (key === "images") return;
+        if (key === "images" || key === "sizes" || key === "colors") return;
         if (typeof val === "boolean") {
           payload.append(key, String(val));
         } else {
@@ -338,6 +364,14 @@ export default function EditProductPage() {
         }
       });
       
+      // Append sizes and colors as separate array items for the backend
+      if (formData.sizes) {
+        formData.sizes.split(',').map(s => s.trim()).filter(Boolean).forEach(s => payload.append("sizes", s));
+      }
+      if (formData.colors) {
+        formData.colors.split(',').map(c => c.trim()).filter(Boolean).forEach(c => payload.append("colors", c));
+      }
+
       newImages.forEach((img) => payload.append("newImages", img));
       imagesToDelete.forEach((id) => payload.append("deleteImages", id));
 
@@ -380,13 +414,14 @@ export default function EditProductPage() {
   }
 
   const visibleExistingImages = existingImages.filter(img => !imagesToDelete.includes(img.public_id));
+  
+  const quillWrapperCls = "w-full border rounded-lg overflow-hidden transition border-gray-300 [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-gray-200 [&_.ql-container]:border-none [&_.ql-editor]:min-h-[100px]";
 
   return (
     <div className="max-w-3xl mx-auto p-6">
       <div className="bg-white shadow rounded-lg p-6">
         <h1 className="text-2xl font-bold mb-6">Edit Product</h1>
         
-        {/* Success Message */}
         {submitSuccess && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
             <CheckCircle size={20} className="text-green-600 flex-shrink-0 mt-0.5" />
@@ -403,7 +438,6 @@ export default function EditProductPage() {
           </div>
         )}
         
-        {/* Error Message */}
         {submitError && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
             <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
@@ -553,6 +587,31 @@ export default function EditProductPage() {
             />
             {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Colors (Comma separated)</label>
+              <input
+                type="text"
+                name="colors"
+                value={formData.colors}
+                onChange={handleInputChange}
+                placeholder="e.g., Red, Blue, Green"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#AEAA9B] transition"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Sizes (Comma separated)</label>
+              <input
+                type="text"
+                name="sizes"
+                value={formData.sizes}
+                onChange={handleInputChange}
+                placeholder="e.g., S, M, L, XL"
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#AEAA9B] transition"
+              />
+            </div>
+          </div>
           
           {/* Badge */}
           <div>
@@ -571,35 +630,30 @@ export default function EditProductPage() {
           {/* Short Description */}
           <div>
             <label className="block mb-2 font-medium text-sm">Short Description</label>
-            <textarea
-              name="shortDescription"
-              rows={2}
-              value={formData.shortDescription}
-              onChange={handleInputChange}
-              placeholder="Brief product description"
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#AEAA9B] transition"
-              maxLength={200}
-            />
-            <p className="text-gray-400 text-xs mt-1">
-              {formData.shortDescription.length}/200 characters
-            </p>
+            <div className={quillWrapperCls}>
+              <ReactQuill
+                theme="snow"
+                value={formData.shortDescription}
+                onChange={(val) => handleRichTextChange("shortDescription", val)}
+                modules={quillModules}
+                placeholder="Brief product description..."
+              />
+            </div>
           </div>
           
           {/* Full Description */}
           <div>
             <label className="block mb-2 font-medium text-sm">Full Description</label>
-            <textarea
-              name="description"
-              rows={5}
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Detailed product description"
-              className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#AEAA9B] transition"
-              maxLength={2000}
-            />
-            <p className="text-gray-400 text-xs mt-1">
-              {formData.description.length}/2000 characters
-            </p>
+            <div className={quillWrapperCls}>
+              <ReactQuill
+                theme="snow"
+                value={formData.description}
+                onChange={(val) => handleRichTextChange("description", val)}
+                modules={quillModules}
+                placeholder="Detailed product description..."
+                className="[&_.ql-editor]:min-h-[200px]"
+              />
+            </div>
           </div>
           
           {/* Images */}

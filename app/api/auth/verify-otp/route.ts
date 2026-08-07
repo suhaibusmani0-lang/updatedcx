@@ -4,7 +4,7 @@ import UserModel from '@/models/User.model';
 import OtpModel from '@/models/Otp.model'; 
 import { SignJWT } from 'jose'; 
 
-export async function POST(req) {
+export async function POST(req: Request) {
   try {
     await connectDB(); 
 

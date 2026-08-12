@@ -1,0 +1,28 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api
+Disallow: /api/
+Disallow: /auth/
+Disallow: /checkout
+Disallow: /checkout/
+Disallow: /cart
+Disallow: /my-account
+Disallow: /wishlist
+Disallow: /*?*orderId=
+Disallow: /*?*awb=
+
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api
+Disallow: /api/
+Disallow: /auth/
+Disallow: /checkout
+Disallow: /my-account
+Disallow: /wishlist
+
+Sitemap: https://cosmoxs.com/sitemap.xml
+Host: https://cosmoxs.com

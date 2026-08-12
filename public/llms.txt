@@ -1,0 +1,12 @@
+# Cosmopolitan Xccessories
+
+> Cosmopolitan Xccessories is an online store for premium fragrances, bakhoor, oud, home accessories and curated lifestyle products.
+
+## Main pages
+
+- [Home](https://cosmoxs.com/)
+- [Products](https://cosmoxs.com/products)
+- [About](https://cosmoxs.com/about)
+- [Contact](https://cosmoxs.com/contact)
+- [FAQs](https://cosmoxs.com/faqs)
+- [Blog](https://cosmoxs.com/blog)

@@ -1,0 +1,15 @@
+"use client";
+import { useState, useEffect, ReactNode } from "react";
+import { SlidersHorizontal, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+export default function MobileToolbar({filterNode,currentSort}:{filterNode:ReactNode;currentSort:string}){
+ const [showSort,setShowSort]=useState(false),[showFilter,setShowFilter]=useState(false);const router=useRouter();const searchParams=useSearchParams();
+ useEffect(()=>{setShowFilter(false);},[searchParams]);
+ const handleSort=(val:string)=>{const params=new URLSearchParams(searchParams.toString());params.set("sort",val);router.push("?"+params.toString());setShowSort(false);};
+ const sortOptions=[{label:"Newest First",value:"newest"},{label:"Price Low to High",value:"price-low"},{label:"Price High to Low",value:"price-high"},{label:"Most Popular",value:"popular"}];
+ const activeSortLabel=sortOptions.find(o=>o.value===currentSort)?.label||"Newest First";
+ return <><div className="fixed bottom-0 left-0 right-0 z-40 flex h-[52px] bg-white border-t border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] lg:hidden"><button type="button" onClick={()=>setShowSort(true)} className="flex-1 flex items-center justify-center font-medium text-[14px] text-[#1A1A1A] border-r border-gray-200" aria-label="Open sort options">Sort By {activeSortLabel.split(" ")[0]}</button><button type="button" onClick={()=>setShowFilter(true)} className="flex-1 flex items-center justify-center gap-2 font-medium text-[14px] text-[#1A1A1A]" aria-label="Open filters">Filter <SlidersHorizontal size={16} aria-hidden="true"/></button></div>
+ {showSort&&<div className="fixed inset-0 z-[60] flex items-end bg-black/60 lg:hidden" onClick={()=>setShowSort(false)}><div className="w-full bg-white rounded-t-2xl pb-6" onClick={e=>e.stopPropagation()}><div className="flex justify-between items-center p-4 border-b border-gray-100"><h3 className="font-semibold text-lg">Sort by</h3><button type="button" aria-label="Close sort options" onClick={()=>setShowSort(false)}><X size={20}/></button></div><div className="flex flex-col px-4 py-2">{sortOptions.map(option=><label key={option.value} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-none cursor-pointer"><input type="radio" name="mobile-sort" className="w-5 h-5 accent-[#AEAA9B]" checked={currentSort===option.value} onChange={()=>handleSort(option.value)}/><span className="text-[15px] text-[#1A1A1A]">{option.label}</span></label>)}</div></div></div>}
+ {showFilter&&<><div className="fixed inset-0 z-[60] bg-black/60 lg:hidden" onClick={()=>setShowFilter(false)} aria-hidden="true"/><div className="fixed inset-y-0 right-0 z-[70] w-[85vw] max-w-[350px] bg-white flex flex-col lg:hidden shadow-2xl"><div className="flex justify-between items-center p-4 border-b border-gray-100 shadow-sm"><h3 className="font-semibold text-lg">Filters</h3><button type="button" aria-label="Close filters" onClick={()=>setShowFilter(false)} className="p-1 hover:bg-gray-100 rounded-full"><X size={20}/></button></div><div className="flex-1 overflow-y-auto p-4 custom-scrollbar">{filterNode}</div></div></>}
+ </>;
+}

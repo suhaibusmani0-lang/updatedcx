@@ -22,7 +22,7 @@ import "@/models/Category.model";
 const SITE_URL =
   process.env.NEXT_PUBLIC_BASE_URL || "https://cosmoxs.com";
 
-export const revalidate = 3600;
+export const revalidate = 60;
 
 export async function generateStaticParams() {
   try {

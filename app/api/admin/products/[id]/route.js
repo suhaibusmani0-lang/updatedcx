@@ -92,16 +92,20 @@ export async function PUT(req, { params }) {
 
     if (Array.isArray(body.sizes)) updateData.sizes = body.sizes.map(String).map((v) => v.trim()).filter(Boolean);
     if (Array.isArray(body.colors)) updateData.colors = body.colors.map(String).map((v) => v.trim()).filter(Boolean);
+    
+    // Yahan maine filter add kiya hai
     if (Array.isArray(body.variants)) {
-      updateData.variants = body.variants.map((variant) => ({
-        size: variant?.size ? String(variant.size) : "",
-        color: variant?.color ? String(variant.color) : "",
-        stock: Math.max(0, Number.parseInt(variant?.stock ?? 0, 10) || 0),
-        sku: variant?.sku ? String(variant.sku) : "",
-        price: numberOrNull(variant?.price),
-        salePrice: numberOrNull(variant?.salePrice),
-        image: variant?.image ? String(variant.image) : "",
-      }));
+      updateData.variants = body.variants
+        .filter((variant) => (variant?.size && String(variant.size).trim() !== "") || (variant?.color && String(variant.color).trim() !== ""))
+        .map((variant) => ({
+          size: variant?.size ? String(variant.size) : "",
+          color: variant?.color ? String(variant.color) : "",
+          stock: Math.max(0, Number.parseInt(variant?.stock ?? 0, 10) || 0),
+          sku: variant?.sku ? String(variant.sku) : "",
+          price: numberOrNull(variant?.price),
+          salePrice: numberOrNull(variant?.salePrice),
+          image: variant?.image ? String(variant.image) : "",
+        }));
     }
 
     let currentImages = [...(existing.images || [])];
